@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>3주기·4주기 편람 비교 대시보드</title>
+<meta name="viewport" content="width=1280" />
+<!-- Tailwind CDN (production은 아니지만 Phase 3 MVP용) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- D3.js v7 -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+  html, body { height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; background: #f7f8fa; color: #1f2937; }
+  .scroll-y { overflow-y: auto; scrollbar-width: thin; }
+  .crit-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    border: 1px solid transparent; font-size: 13px;
+    line-height: 1.35;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .crit-row:hover { background: #eef2ff; border-color: #c7d2fe; }
+  .crit-row.selected { background: #fef3c7; border-color: #f59e0b; font-weight: 600; }
+  .crit-row.dimmed { opacity: 0.35; }
+  .crit-row.related { background: #ecfdf5; border-color: #6ee7b7; }
+  .crit-no { font-weight: 700; color: #4338ca; min-width: 32px; font-size: 12px; }
+  .crit-title { flex: 1; }
+  .crit-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  /* mapping_type badges */
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 9999px; font-size: 10px; margin-left: 4px; font-weight: 600; white-space: nowrap; vertical-align: middle; }
+  .b-유지   { background: #e5e7eb; color: #374151; }
+  .b-수정   { background: #dbeafe; color: #1e40af; }
+  .b-통합   { background: #fed7aa; color: #9a3412; }
+  .b-분할   { background: #e9d5ff; color: #6b21a8; }
+  .b-이동   { background: #ccfbf1; color: #115e59; }
+  .b-복합   { background: #fde68a; color: #78350f; }
+  .b-신설   { background: #a7f3d0; color: #065f46; }
+  .b-삭제   { background: #fecaca; color: #991b1b; }
+  .b-확장   { background: #fbcfe8; color: #9d174d; }
+  /* center svg paths */
+  .map-path { fill: none; stroke-width: 1.5; opacity: 0.55; transition: opacity 0.15s, stroke-width 0.15s; }
+  .map-path.highlighted { opacity: 1; stroke-width: 2.8; }
+  .map-path.dimmed { opacity: 0.08; }
+  .map-path.similar { stroke-dasharray: 3 3; opacity: 0.3; }
+  .map-path.similar.highlighted { opacity: 0.9; }
+  .map-path.merged { stroke: #9ca3af; stroke-dasharray: 6 3; opacity: 0.5; }
+  /* color per mapping base */
+  .p-유지 { stroke: #6b7280; }
+  .p-수정 { stroke: #2563eb; }
+  .p-통합 { stroke: #ea580c; }
+  .p-분할 { stroke: #9333ea; }
+  .p-이동 { stroke: #0d9488; }
+  .p-복합 { stroke: #d97706; }
+  .p-similar { stroke: #94a3b8; }
+  /* legend dot */
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  /* panel styles */
+  .panel-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+  .panel-card h3 { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 6px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+  .row-kv { display: flex; font-size: 12px; margin: 2px 0; }
+  .row-kv .k { min-width: 70px; color: #6b7280; }
+  .row-kv .v { flex: 1; color: #111827; }
+  .item-diff { border-left: 3px solid #e5e7eb; padding: 4px 8px; margin: 6px 0; font-size: 12px; }
+  .item-diff.added { border-color: #10b981; background: #ecfdf5; }
+  .item-diff.removed { border-color: #ef4444; background: #fef2f2; }
+  .item-diff.modified { border-color: #f59e0b; background: #fffbeb; }
+  .item-diff.kept { border-color: #94a3b8; background: #f8fafc; }
+  .similar-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; padding: 4px 6px; border-radius: 4px;
+  }
+  .similar-row:hover { background: #f1f5f9; cursor: pointer; }
+  .similar-row.new-candidate { background: #fef9c3; }
+  .tab-button {
+    padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 6px;
+    cursor: pointer; background: #e5e7eb; color: #374151;
+  }
+  .tab-button.active { background: #4338ca; color: white; }
+  .btn-sm { font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid #d1d5db; background: white; cursor: pointer; }
+  .btn-sm:hover { background: #f3f4f6; }
+  input[type=range] { vertical-align: middle; }
+  select, input[type=text] { border: 1px solid #d1d5db; border-radius: 4px; padding: 3px 6px; font-size: 12px; background: white; }
+  /* 인쇄 숨김 */
+  .no-print { }
+  @media print { .no-print { display: none; } }
+  /* 로딩 */
+  #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 100; font-size: 14px; color: #6b7280; }
+
+  /* =====================================================
+   * Tab 3: 신구조문 대비표 스타일
+   * ===================================================== */
+  .cmp-nav { width: 320px; min-width: 320px; border-right: 1px solid #e5e7eb; background: white; }
+  .cmp-body { background: #fafbff; padding: 16px 20px; }
+  .cmp-table {
+    width: 100%; border-collapse: collapse; background: white;
+    font-size: 13px; line-height: 1.55; margin-bottom: 18px;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .cmp-table th, .cmp-table td {
+    border: 1px solid #cbd5e1; padding: 10px 12px;
+    vertical-align: top; width: 50%;
+  }
+  .cmp-table th {
+    background: #1e3a8a; color: white;
+    font-weight: 700; font-size: 12px; text-align: center;
+    padding: 8px 12px;
+  }
+  .cmp-table th.c3 { background: #64748b; }
+  .cmp-table tr.row-title > td {
+    background: #eef2ff; font-weight: 600;
+    border-bottom: 2px solid #4338ca;
+  }
+  .cmp-table tr.row-meta > td {
+    background: #fef3c7; font-size: 12px; color: #78350f;
+    text-align: center;
+  }
+  .cmp-table tr.row-kept > td   { /* 유지 행 - 기본 흰색 */ }
+  .cmp-table tr.row-modified > td { background: #fffbeb; }
+  .cmp-table td.cell-new {
+    background: #ecfdf5; color: #065f46;
+    font-style: italic; text-align: center;
+  }
+  .cmp-table td.cell-del {
+    background: #fef2f2; color: #991b1b;
+    font-style: italic; text-align: center;
+  }
+  .cmp-table td.cell-merged-note {
+    background: #f8fafc; font-size: 11px; color: #6b7280;
+    padding: 4px 8px;
+  }
+  /* 어절 diff */
+  .w-eq  { }
+  .w-ins { background: #bbf7d0; color: #14532d; padding: 0 2px; border-radius: 2px; font-weight: 600; }
+  .w-del { background: #fecaca; color: #7f1d1d; padding: 0 2px; border-radius: 2px; text-decoration: line-through; text-decoration-color: #dc2626; }
+  /* item key 표식 */
+  .ikey {
+    display: inline-block; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px; color: #475569; background: #f1f5f9;
+    padding: 1px 4px; border-radius: 3px; margin-right: 6px;
+  }
+  .subfield-tag {
+    display: inline-block; font-size: 10px;
+    padding: 1px 6px; border-radius: 4px; margin-right: 6px;
+    background: #ddd6fe; color: #5b21b6;
+  }
+  /* 매칭 근거 태그 (Tab 3) */
+  .match-tag {
+    display: inline-block; font-size: 10px;
+    padding: 1px 5px; border-radius: 3px; margin-right: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    vertical-align: middle; cursor: help;
+  }
+  .match-tag.m-key       { background: #e0e7ff; color: #3730a3; }
+  .match-tag.m-exact     { background: #d1fae5; color: #065f46; }
+  .match-tag.m-fuzzy     { background: #fef3c7; color: #92400e; }
+  .cmp-table tr.row-fuzzy > td { background: #fffceb; }
+  /* 좌 네비 */
+  .cmp-nav-header {
+    padding: 10px 12px; border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc; font-size: 12px; color: #475569;
+  }
+  .cmp-nav-item {
+    display: block; padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9; cursor: pointer;
+    font-size: 13px;
+  }
+  .cmp-nav-item:hover { background: #eef2ff; }
+  .cmp-nav-item.selected { background: #fef3c7; border-left: 3px solid #f59e0b; padding-left: 9px; }
+  .cmp-nav-item .cmp-no { font-weight: 700; color: #1e40af; margin-right: 6px; }
+  .cmp-nav-item .cmp-title { color: #111827; }
+  .cmp-nav-item .cmp-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .cmp-empty {
+    text-align: center; color: #94a3b8; font-size: 13px;
+    padding: 40px 20px;
+  }
+  /* 인쇄 친화 */
+  @media print {
+    .cmp-nav, header, .no-print { display: none !important; }
+    .cmp-body { padding: 0; background: white; }
+    .cmp-table { box-shadow: none; page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body class="flex flex-col h-full">
+
+<!-- ============ HEADER ============ -->
+<header class="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4 flex-wrap shrink-0 no-print">
+  <div class="flex items-center gap-2">
+    <div class="w-8 h-8 rounded bg-indigo-600 text-white flex items-center justify-center font-bold">編</div>
+    <div>
+      <div class="font-bold text-sm">3주기·4주기 대학기관평가인증편람 비교</div>
+      <div class="text-[11px] text-gray-500">Phase 3 대시보드 MVP · <span id="meta-info">loading...</span></div>
+    </div>
+  </div>
+
+  <nav class="flex gap-2 ml-4" id="tabs">
+    <button class="tab-button active" data-tab="explore">① 매핑 탐색</button>
+    <button class="tab-button" data-tab="impact">② 영향도</button>
+    <button class="tab-button" data-tab="compare">③ 신구조문 대비표</button>
+  </nav>
+
+  <div class="flex items-center gap-3 ml-auto flex-wrap">
+    <label class="text-xs text-gray-600 flex items-center gap-1">
+      편람:
+      <select id="part-select">
+        <option value="overview">① 편람 개요</option>
+        <option value="report">② 보고서 주요내용</option>
+        <option value="evidence">③ 근거자료</option>
+        <option value="checkpoints">④ 주요 점검사항</option>
+        <option value="notes">⑤ 유의사항 및 관련정책</option>
+      </select>
+    </label>
+
+    <label class="text-xs text-gray-600 flex items-center gap-1">
+      SIMILAR_TO ≥ <span id="thr-val" class="font-mono font-semibold text-indigo-700">0.75</span>
+      <input id="thr-slider" type="range" min="0.55" max="1.0" step="0.01" value="0.75" class="w-24" />
+    </label>
+
+    <label class="text-xs text-gray-600 flex items-center gap-1" title="Tab 3 신구조문 대비표에서 item 매칭에 사용하는 2-gram Jaccard 임계값">
+      item 매칭 ≥ <span id="item-thr-val" class="font-mono font-semibold text-emerald-700">0.85</span>
+      <input id="item-thr-slider" type="range" min="0.75" max="0.95" step="0.01" value="0.85" class="w-20" />
+    </label>
+
+    <label class="text-xs text-gray-600 flex items-center gap-1">
+      <input id="same-cycle-toggle" type="checkbox" />
+      same-cycle SIMILAR_TO 표시
+    </label>
+
+    <input id="search-box" type="text" placeholder="제목 검색…" class="text-xs w-40" />
+
+    <button class="btn-sm" id="reset-btn" title="선택/검색 초기화">초기화</button>
+  </div>
+</header>
+
+<!-- ============ TOOL BAR LEGEND ============ -->
+<div class="bg-white border-b border-gray-200 px-4 py-1.5 text-[11px] text-gray-600 flex items-center gap-3 flex-wrap shrink-0 no-print">
+  <span class="font-semibold">변경유형:</span>
+  <span><span class="legend-dot" style="background:#6b7280"></span>유지</span>
+  <span><span class="legend-dot" style="background:#2563eb"></span>수정</span>
+  <span><span class="legend-dot" style="background:#ea580c"></span>통합</span>
+  <span><span class="legend-dot" style="background:#9333ea"></span>분할</span>
+  <span><span class="legend-dot" style="background:#0d9488"></span>이동</span>
+  <span><span class="legend-dot" style="background:#d97706"></span>복합형</span>
+  <span class="ml-4 font-semibold">후보선:</span>
+  <span style="border-top:2px dashed #94a3b8; display:inline-block; width:20px; vertical-align:middle;"></span> SIMILAR_TO
+  <span class="ml-4 font-semibold">그룹 내부 쌍:</span>
+  <span style="border-top:2px dashed #9ca3af; display:inline-block; width:20px; vertical-align:middle;"></span> MERGED_WITH
+  <span class="ml-auto text-gray-400" id="stat-info"></span>
+</div>
+
+<!-- ============ MAIN ============ -->
+<main class="flex-1 overflow-hidden" id="main">
+
+  <!-- ---- Tab 1: 매핑 탐색 ---- -->
+  <section id="tab-explore" class="h-full grid" style="grid-template-columns: 1fr 460px 1fr;">
+    <!-- Left: 3주기 list -->
+    <div class="bg-white border-r border-gray-200 flex flex-col">
+      <div class="px-3 py-2 bg-slate-50 border-b border-gray-200 flex items-baseline justify-between">
+        <div class="font-bold text-sm text-slate-700">3주기</div>
+        <div class="text-xs text-gray-500"><span id="left-count">0</span>개 준거</div>
+      </div>
+      <div class="scroll-y flex-1" id="left-list"></div>
+    </div>
+
+    <!-- Center: SVG mapping -->
+    <div class="relative bg-slate-50 border-r border-gray-200" id="center-wrap">
+      <svg id="center-svg" class="w-full h-full"></svg>
+      <div id="center-hint" class="absolute top-2 left-0 right-0 text-center text-[11px] text-gray-400 pointer-events-none">
+        좌·우 준거 클릭 → 매핑 강조 / Tab 2 자동 연동
+      </div>
+    </div>
+
+    <!-- Right: 4주기 list -->
+    <div class="bg-white flex flex-col">
+      <div class="px-3 py-2 bg-slate-50 border-b border-gray-200 flex items-baseline justify-between">
+        <div class="font-bold text-sm text-indigo-700">4주기</div>
+        <div class="text-xs text-gray-500"><span id="right-count">0</span>개 준거</div>
+      </div>
+      <div class="scroll-y flex-1" id="right-list"></div>
+    </div>
+  </section>
+
+  <!-- ---- Tab 2: 영향도 ---- -->
+  <section id="tab-impact" class="h-full hidden scroll-y p-4">
+    <div id="impact-empty" class="text-center text-gray-400 mt-20">
+      <div class="text-lg mb-2">🎯</div>
+      Tab 1 에서 준거를 선택하면 이곳에 영향도 상세가 표시됩니다.
+    </div>
+    <div id="impact-body" class="hidden max-w-5xl mx-auto"></div>
+  </section>
+
+  <!-- ---- Tab 3: 신구조문 대비표 ---- -->
+  <section id="tab-compare" class="h-full hidden flex" style="display:none;">
+    <!-- 좌: 4주기 기준 네비 -->
+    <aside class="cmp-nav flex flex-col shrink-0">
+      <div class="cmp-nav-header flex items-center justify-between">
+        <span><b>4주기</b> 준거 목록</span>
+        <label class="text-[11px] flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="changed-only-toggle" checked />
+          <span>신설·변경만</span>
+        </label>
+      </div>
+      <div class="scroll-y flex-1" id="cmp-nav-list"></div>
+      <div class="px-3 py-2 border-t border-gray-200 bg-slate-50 text-[11px] text-gray-500">
+        <span id="cmp-nav-stat"></span>
+      </div>
+    </aside>
+    <!-- 우: 대비표 본문 -->
+    <div class="flex-1 scroll-y cmp-body" id="cmp-body">
+      <div class="cmp-empty">
+        ← 좌측에서 4주기 준거를 선택하면 3주기와의 대비표가 표시됩니다.<br />
+        <span class="text-xs text-gray-400">법령 신구조문 대비표 형식. 어절 단위 diff: <span class="w-ins">추가</span> / <span class="w-del">삭제</span></span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="loading">데이터 로딩 중…</div>
+
+<script>
+/* =====================================================================
+ * Phase 3 Dashboard — 3주기·4주기 편람 비교
+ * 단일 HTML, D3 + Tailwind CDN, Vanilla JS.
+ *
+ * 데이터: data/nodes.json, data/edges.json, data/meta.json
+ * 상태  : window.state (nodes Map, edges by type, adjacency index, UI state)
+ * =====================================================================*/
+
+/* ---- 상수 ---- */
+const PART_LABELS = {
+  overview:    "편람 개요 비교",
+  report:      "편람 보고서 주요내용 비교",
+  evidence:    "편람 근거자료 비교",
+  checkpoints: "편람 주요 점검사항 비교",
+  notes:       "편람 유의사항 및 관련정책 비교",
+};
+
+/* mapping_type 문자열 → base 키 (색상/뱃지용) */
+function mappingBase(raw) {
+  if (!raw) return "유지";
+  if (raw.indexOf("·") >= 0) return "복합";   // "통합·이동", "이동·확장" 등
+  if (raw.startsWith("유지")) return "유지";
+  if (raw.startsWith("수정")) return "수정";
+  if (raw.startsWith("통합")) return "통합";
+  if (raw.startsWith("분할")) return "분할";
+  if (raw.startsWith("이동")) return "이동";
+  if (raw.startsWith("신설")) return "신설";
+  if (raw.startsWith("삭제")) return "삭제";
+  return "복합";
+}
+
+/* ---- 전역 상태 ---- */
+const state = {
+  meta: null,
+  nodesById: new Map(),     // id → node
+  critIds: {                // cycle→part→순서대로 정렬된 criterion id 배열
+    "3": {}, "4": {}
+  },
+  itemsByCrit: new Map(),   // critId → [itemNode]
+  edges: {                  // type 별 엣지 리스트
+    CONTAINS: [],
+    MAPS_TO: [],
+    MERGED_WITH: [],
+    ITEM_MAPS_TO: [],
+    SIMILAR_TO: [],
+  },
+  // 인접 인덱스: critId → { mapsOut, mapsIn, merged, similar, itemMaps }
+  adj: new Map(),
+  // UI 상태
+  ui: {
+    part: "overview",
+    selected: null,         // 선택된 criterion id
+    threshold: 0.75,
+    showSameCycle: false,
+    search: "",
+    activeTab: "explore",
+    compareSelected: null,  // Tab 3: 선택된 4주기 criterion id
+    changedOnly: true,      // Tab 3: 신설·변경만 보기
+    itemMatchThr: 0.85,     // Tab 3: item 매칭 Jaccard 임계값 (0.75~0.95)
+  },
+};
+
+/* ---- 데이터 로드 ---- */
+async function loadData() {
+  const [nodes, edges, meta] = await Promise.all([
+    fetch("data/nodes.json").then(r => r.json()),
+    fetch("data/edges.json").then(r => r.json()),
+    fetch("data/meta.json").then(r => r.json()),
+  ]);
+
+  state.meta = meta;
+
+  // nodes index
+  for (const n of nodes.nodes) {
+    state.nodesById.set(n.id, n);
+  }
+
+  // criterion id 를 part × cycle 별로 정렬된 배열로
+  for (const cycle of ["3", "4"]) {
+    for (const pk of Object.keys(PART_LABELS)) {
+      state.critIds[cycle][pk] = [];
+    }
+  }
+  for (const n of nodes.nodes) {
+    if (n.type === "Criterion") {
+      state.critIds[n.attrs.cycle][n.attrs.part_key].push(n.id);
+    }
+  }
+  // criterion 번호 기준 정렬
+  for (const cy of ["3","4"]) for (const pk in state.critIds[cy]) {
+    state.critIds[cy][pk].sort((a, b) => {
+      const na = state.nodesById.get(a).attrs.criterion;
+      const nb = state.nodesById.get(b).attrs.criterion;
+      return compareCriterion(na, nb);
+    });
+  }
+
+  // items → critId 로 그룹핑
+  for (const n of nodes.nodes) {
+    if (n.type === "Item") {
+      const ckey = `crit_${n.attrs.cycle}_${n.attrs.part_key}_${n.attrs.criterion}`;
+      if (!state.itemsByCrit.has(ckey)) state.itemsByCrit.set(ckey, []);
+      state.itemsByCrit.get(ckey).push(n);
+    }
+  }
+
+  // edges 분류
+  for (const e of edges.edges) {
+    if (state.edges[e.type]) state.edges[e.type].push(e);
+  }
+
+  // 인접 인덱스 구축 (criterion 기준)
+  function adjGet(id) {
+    if (!state.adj.has(id)) {
+      state.adj.set(id, { mapsOut: [], mapsIn: [], merged: [], similar: [], itemMaps: [] });
+    }
+    return state.adj.get(id);
+  }
+  for (const e of state.edges.MAPS_TO) {
+    adjGet(e.source).mapsOut.push(e);
+    adjGet(e.target).mapsIn.push(e);
+  }
+  for (const e of state.edges.MERGED_WITH) {
+    adjGet(e.source).merged.push(e);
+    adjGet(e.target).merged.push(e);
+  }
+  for (const e of state.edges.SIMILAR_TO) {
+    adjGet(e.source).similar.push(e);
+    adjGet(e.target).similar.push(e);
+  }
+  for (const e of state.edges.ITEM_MAPS_TO) {
+    const sCrit = itemToCritId(e.source);
+    const tCrit = itemToCritId(e.target);
+    if (sCrit) adjGet(sCrit).itemMaps.push(e);
+    if (tCrit && tCrit !== sCrit) adjGet(tCrit).itemMaps.push(e);
+  }
+
+  // Header meta
+  document.getElementById("meta-info").textContent =
+    `노드 ${nodes.nodes.length} / 엣지 ${edges.edges.length} / build=${(meta.built_at||"").slice(0,10)}`;
+  document.getElementById("stat-info").textContent =
+    `MAPS_TO ${state.edges.MAPS_TO.length} · MERGED ${state.edges.MERGED_WITH.length} · ITEM_MAPS_TO ${state.edges.ITEM_MAPS_TO.length} · SIMILAR_TO ${state.edges.SIMILAR_TO.length}`;
+}
+
+/* criterion 번호 비교: "1.1" < "1.2" < "1.10" < "2.1" */
+function compareCriterion(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+
+function itemToCritId(itemId) {
+  // item_{cy}_{pk}_{crit}_{key} → crit_{cy}_{pk}_{crit}
+  const parts = itemId.split("_");
+  if (parts[0] !== "item") return null;
+  return `crit_${parts[1]}_${parts[2]}_${parts[3]}`;
+}
+
+/* =====================================================================
+ * 렌더링: Tab 1 좌/우 준거 리스트
+ * =====================================================================*/
+function renderLists() {
+  const pk = state.ui.part;
+  const search = state.ui.search.trim().toLowerCase();
+
+  // 선택된 노드의 관련 노드 집합 (강조용)
+  const related = collectRelated(state.ui.selected);
+
+  function renderCol(target, cycle, label) {
+    const ids = state.critIds[cycle][pk];
+    const wrap = document.getElementById(target);
+    wrap.innerHTML = "";
+    let visible = 0;
+    for (const cid of ids) {
+      const n = state.nodesById.get(cid);
+      if (search) {
+        if (!(n.attrs.title||"").toLowerCase().includes(search)
+            && !cid.includes(search)) {
+          continue;
+        }
+      }
+      visible++;
+      const row = document.createElement("div");
+      row.className = "crit-row";
+      row.dataset.critId = cid;
+      if (state.ui.selected === cid) row.classList.add("selected");
+      else if (related.has(cid)) row.classList.add("related");
+      else if (state.ui.selected) row.classList.add("dimmed");
+      const mtype = getCritMappingType(n);
+      const base = mappingBase(mtype);
+      row.innerHTML = `
+        <div class="crit-no">${n.attrs.criterion}</div>
+        <div class="crit-title">
+          ${escapeHtml(n.attrs.title || "")}
+          <span class="badge b-${base}">${escapeHtml(base)}</span>
+          <div class="crit-meta">그룹 ${n.attrs.group_id ?? "-"} · ${escapeHtml(n.attrs.theme || "")}</div>
+        </div>`;
+      row.addEventListener("click", () => selectCriterion(cid));
+      wrap.appendChild(row);
+    }
+    return visible;
+  }
+  const lc = renderCol("left-list",  "3", "3주기");
+  const rc = renderCol("right-list", "4", "4주기");
+  document.getElementById("left-count").textContent = lc;
+  document.getElementById("right-count").textContent = rc;
+}
+
+/** criterion 노드의 대표 mapping_type: 3주기면 out, 4주기면 group_mapping_type */
+function getCritMappingType(n) {
+  if (n.attrs.cycle === "3") {
+    const a = state.adj.get(n.id);
+    if (a && a.mapsOut.length) {
+      const e = a.mapsOut[0];
+      return e.attrs.mapping_type || "유지";
+    }
+    return "삭제"; // 고립된 3주기
+  } else {
+    // 4주기: group_mapping_type 또는 mapsIn 에서 유추
+    if (n.attrs.group_mapping_type) return n.attrs.group_mapping_type;
+    const a = state.adj.get(n.id);
+    if (a && a.mapsIn.length) return a.mapsIn[0].attrs.mapping_type || "유지";
+    return "신설";
+  }
+}
+
+/** 선택 준거에 연결된 id 집합 (좌/우 강조용) */
+function collectRelated(cid) {
+  const set = new Set();
+  if (!cid) return set;
+  const adj = state.adj.get(cid);
+  if (!adj) return set;
+  for (const e of adj.mapsOut)   { set.add(e.source); set.add(e.target); }
+  for (const e of adj.mapsIn)    { set.add(e.source); set.add(e.target); }
+  for (const e of adj.merged)    { set.add(e.source); set.add(e.target); }
+  return set;
+}
+
+/* =====================================================================
+ * 렌더링: Tab 1 중앙 SVG 매핑 선
+ * =====================================================================*/
+function renderCenterSvg() {
+  const svg = d3.select("#center-svg");
+  svg.selectAll("*").remove();
+
+  const centerEl = document.getElementById("center-wrap");
+  const cw = centerEl.clientWidth;
+  const ch = centerEl.clientHeight;
+  svg.attr("viewBox", `0 0 ${cw} ${ch}`).attr("preserveAspectRatio", "none");
+
+  // 마커 정의 (화살표)
+  const defs = svg.append("defs");
+  ["유지","수정","통합","분할","이동","복합","similar"].forEach(k => {
+    defs.append("marker")
+      .attr("id", `arrow-${k}`)
+      .attr("viewBox", "0 0 10 10")
+      .attr("refX", 9).attr("refY", 5)
+      .attr("markerWidth", 6).attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path").attr("d", "M0,0 L10,5 L0,10 Z")
+      .attr("class", `p-${k}`).attr("fill", "currentColor").attr("stroke", "none")
+      .style("fill", strokeColor(k));
+  });
+
+  const leftList = document.getElementById("left-list");
+  const rightList = document.getElementById("right-list");
+
+  // DOM 측정 → id → {y, visible}
+  function rowPositions(container) {
+    const rect = container.getBoundingClientRect();
+    const map = new Map();
+    for (const row of container.querySelectorAll(".crit-row")) {
+      const r = row.getBoundingClientRect();
+      const y = r.top - rect.top + r.height / 2;
+      // 스크롤 범위 밖도 기록 (off-screen 도 선은 그려주되 클리핑)
+      map.set(row.dataset.critId, { y: y + container.scrollTop - (r.top - rect.top - r.height/2 === r.height/2 ? 0 : 0) });
+      // 더 간단히:
+    }
+    // 다시 단순 계산
+    const map2 = new Map();
+    for (const row of container.querySelectorAll(".crit-row")) {
+      const r = row.getBoundingClientRect();
+      const y = r.top + r.height/2 - rect.top;
+      map2.set(row.dataset.critId, { y });
+    }
+    return { map: map2, topOffset: rect.top, clientHeight: rect.height };
+  }
+  const leftPos = rowPositions(leftList);
+  const rightPos = rowPositions(rightList);
+
+  // 중앙 svg 의 좌표계는 center-wrap 기준.
+  // 좌/우 컨테이너의 top 을 center-wrap top 대비 변환해 동일 y 로 사용.
+  const centerRect = centerEl.getBoundingClientRect();
+  function toSvgY(clientY) { return clientY - centerRect.top; }
+
+  const x0 = 0;
+  const x1 = cw;
+  // 베지어 제어점 x
+  const cx0 = cw * 0.30;
+  const cx1 = cw * 0.70;
+
+  const sel = state.ui.selected;
+  const related = collectRelated(sel);
+
+  // 1) MAPS_TO 선
+  for (const e of state.edges.MAPS_TO) {
+    // part 필터
+    const s = state.nodesById.get(e.source);
+    const t = state.nodesById.get(e.target);
+    if (!s || !t) continue;
+    if (s.attrs.part_key !== state.ui.part) continue;
+    const lp = leftList.querySelector(`[data-crit-id="${e.source}"]`);
+    const rp = rightList.querySelector(`[data-crit-id="${e.target}"]`);
+    if (!lp || !rp) continue;
+    const ly = toSvgY(lp.getBoundingClientRect().top + lp.getBoundingClientRect().height / 2);
+    const ry = toSvgY(rp.getBoundingClientRect().top + rp.getBoundingClientRect().height / 2);
+    // 클리핑: 보이는 범위 안인지
+    if (ly < 0 || ly > ch || ry < 0 || ry > ch) {
+      // 살짝 밖이면 그리기 (완전 밖이면 skip)
+      if ((ly < -50 || ly > ch + 50) && (ry < -50 || ry > ch + 50)) continue;
+    }
+    const base = mappingBase(e.attrs.mapping_type);
+    const cls = "map-path p-" + base
+      + (sel ? (sel === e.source || sel === e.target ? " highlighted" : " dimmed") : "");
+    svg.append("path")
+      .attr("class", cls)
+      .attr("d", bezier(x0, ly, x1, ry, cx0, cx1))
+      .attr("marker-end", `url(#arrow-${base})`)
+      .append("title").text(
+        `${e.source} → ${e.target}\n${e.attrs.mapping_type || ""}\n${e.attrs.mapping_note || ""}`);
+  }
+
+  // 2) MERGED_WITH 선 (3주기 내부 통합 쌍): 좌측 내부 곡선
+  for (const e of state.edges.MERGED_WITH) {
+    const s = state.nodesById.get(e.source);
+    if (!s || s.attrs.part_key !== state.ui.part) continue;
+    const row1 = leftList.querySelector(`[data-crit-id="${e.source}"]`);
+    const row2 = leftList.querySelector(`[data-crit-id="${e.target}"]`);
+    if (!row1 || !row2) continue;
+    const y1 = toSvgY(row1.getBoundingClientRect().top + row1.getBoundingClientRect().height / 2);
+    const y2 = toSvgY(row2.getBoundingClientRect().top + row2.getBoundingClientRect().height / 2);
+    if ((y1 < 0 && y2 < 0) || (y1 > ch && y2 > ch)) continue;
+    const cls = "map-path merged"
+      + (sel && (sel === e.source || sel === e.target) ? " highlighted" : "");
+    const mx = cw * 0.08;
+    const d = `M 0,${y1} C ${mx},${y1} ${mx},${y2} 0,${y2}`;
+    svg.append("path").attr("class", cls).attr("d", d);
+  }
+
+  // 3) SIMILAR_TO 선 (선택된 노드 관련만, threshold 이상)
+  if (sel) {
+    const adj = state.adj.get(sel);
+    if (adj) {
+      for (const e of adj.similar) {
+        if (e.attrs.score_hybrid < state.ui.threshold) continue;
+        const other = (e.source === sel) ? e.target : e.source;
+        // Criterion 쌍만 (Item 은 스킵 — 너무 많음)
+        const sn = state.nodesById.get(e.source);
+        const tn = state.nodesById.get(e.target);
+        if (!sn || !tn) continue;
+        if (sn.type !== "Criterion" || tn.type !== "Criterion") continue;
+        // part 필터: 최소 한 쪽이 현재 part 여야 함
+        const inPart = sn.attrs.part_key === state.ui.part || tn.attrs.part_key === state.ui.part;
+        if (!inPart) continue;
+        // same-cycle 토글
+        if (sn.attrs.cycle === tn.attrs.cycle && !state.ui.showSameCycle) continue;
+
+        // 좌/우/동일 part 판정
+        const leftNode = (sn.attrs.cycle === "3" && sn.attrs.part_key === state.ui.part) ? sn
+                      : (tn.attrs.cycle === "3" && tn.attrs.part_key === state.ui.part) ? tn : null;
+        const rightNode = (sn.attrs.cycle === "4" && sn.attrs.part_key === state.ui.part) ? sn
+                       : (tn.attrs.cycle === "4" && tn.attrs.part_key === state.ui.part) ? tn : null;
+
+        if (leftNode && rightNode) {
+          const lp = leftList.querySelector(`[data-crit-id="${leftNode.id}"]`);
+          const rp = rightList.querySelector(`[data-crit-id="${rightNode.id}"]`);
+          if (!lp || !rp) continue;
+          const ly = toSvgY(lp.getBoundingClientRect().top + lp.getBoundingClientRect().height / 2);
+          const ry = toSvgY(rp.getBoundingClientRect().top + rp.getBoundingClientRect().height / 2);
+          svg.append("path")
+            .attr("class", "map-path similar highlighted p-similar")
+            .attr("d", bezier(x0, ly, x1, ry, cx0, cx1))
+            .append("title").text(`SIMILAR_TO  hybrid=${e.attrs.score_hybrid}`);
+        }
+        // cross-part or same-cycle SIMILAR_TO 는 Tab 2 에서만 노출 (시각 혼잡 방지)
+      }
+    }
+  }
+}
+
+function bezier(x0, y0, x1, y1, cx0, cx1) {
+  return `M ${x0},${y0} C ${cx0},${y0} ${cx1},${y1} ${x1},${y1}`;
+}
+function strokeColor(base) {
+  const m = {
+    "유지": "#6b7280", "수정": "#2563eb", "통합": "#ea580c",
+    "분할": "#9333ea", "이동": "#0d9488", "복합": "#d97706",
+    "similar": "#94a3b8"
+  };
+  return m[base] || "#6b7280";
+}
+
+/* =====================================================================
+ * Tab 2: 영향도 패널
+ * =====================================================================*/
+function renderImpact() {
+  const empty = document.getElementById("impact-empty");
+  const body  = document.getElementById("impact-body");
+  const sel = state.ui.selected;
+  if (!sel) {
+    empty.classList.remove("hidden");
+    body.classList.add("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+  body.classList.remove("hidden");
+
+  const node = state.nodesById.get(sel);
+  if (!node) { body.innerHTML = `<div class="text-red-500">노드 없음: ${sel}</div>`; return; }
+  const adj = state.adj.get(sel) || { mapsOut: [], mapsIn: [], merged: [], similar: [], itemMaps: [] };
+
+  const parts = [];
+
+  /* ---- 1) 선택 요약 ---- */
+  parts.push(sectionSelected(node));
+
+  /* ---- 2) 확정 매핑 (MAPS_TO + MERGED_WITH) ---- */
+  parts.push(sectionMappings(node, adj));
+
+  /* ---- 3) Item 수준 ---- */
+  parts.push(sectionItems(node, adj));
+
+  /* ---- 4) Cross-part (SIMILAR_TO 중 다른 part 와 동일 주제) ---- */
+  parts.push(sectionCrossPart(node, adj));
+
+  /* ---- 5) SIMILAR_TO 후보 (Criterion-Criterion, cross-cycle, threshold 이상) ---- */
+  parts.push(sectionSimilar(node, adj));
+
+  body.innerHTML = parts.join("");
+  // 클릭 핸들러 바인딩
+  body.querySelectorAll("[data-jump]").forEach(el => {
+    el.addEventListener("click", ev => {
+      const id = el.dataset.jump;
+      if (id) selectCriterion(id);
+    });
+  });
+}
+
+function sectionSelected(node) {
+  const mtype = getCritMappingType(node);
+  const base = mappingBase(mtype);
+  return `
+  <div class="panel-card">
+    <h3>① 선택 준거</h3>
+    <div class="flex items-start gap-3">
+      <div>
+        <div class="text-2xl font-bold text-indigo-700">${node.attrs.cycle}주기 · ${escapeHtml(node.attrs.criterion)}</div>
+        <div class="text-sm font-semibold">${escapeHtml(node.attrs.title || "")}</div>
+      </div>
+      <div class="flex-1 text-xs text-gray-600">
+        <div class="row-kv"><span class="k">편람</span><span class="v">${escapeHtml(PART_LABELS[node.attrs.part_key] || node.attrs.part_key)}</span></div>
+        <div class="row-kv"><span class="k">그룹</span><span class="v">#${node.attrs.group_id ?? "-"} · ${escapeHtml(node.attrs.theme || "")}</span></div>
+        <div class="row-kv"><span class="k">변경유형</span><span class="v"><span class="badge b-${base}">${escapeHtml(mtype)}</span></span></div>
+        <div class="row-kv"><span class="k">node id</span><span class="v font-mono text-[11px]">${node.id}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sectionMappings(node, adj) {
+  const rows = [];
+  // 3주기 → 4주기 (out)
+  for (const e of adj.mapsOut) {
+    const t = state.nodesById.get(e.target);
+    const base = mappingBase(e.attrs.mapping_type);
+    rows.push(`
+      <div class="item-diff ${baseToDiffCls(base)}">
+        <div class="flex items-center gap-2">
+          <span class="badge b-${base}">${escapeHtml(e.attrs.mapping_type)}</span>
+          <span class="text-gray-500 text-xs">→</span>
+          <a data-jump="${t?.id || ''}" class="font-semibold text-indigo-700 underline cursor-pointer">
+            4주기 ${escapeHtml(t?.attrs.criterion || "?")} · ${escapeHtml(t?.attrs.title || "?")}
+          </a>
+        </div>
+        ${e.attrs.mapping_note ? `<div class="text-xs text-gray-600 mt-1">📝 ${escapeHtml(e.attrs.mapping_note)}</div>` : ""}
+      </div>`);
+  }
+  // 4주기 ← 3주기 (in)
+  for (const e of adj.mapsIn) {
+    const s = state.nodesById.get(e.source);
+    const base = mappingBase(e.attrs.mapping_type);
+    rows.push(`
+      <div class="item-diff ${baseToDiffCls(base)}">
+        <div class="flex items-center gap-2">
+          <a data-jump="${s?.id || ''}" class="font-semibold text-indigo-700 underline cursor-pointer">
+            3주기 ${escapeHtml(s?.attrs.criterion || "?")} · ${escapeHtml(s?.attrs.title || "?")}
+          </a>
+          <span class="text-gray-500 text-xs">→</span>
+          <span class="badge b-${base}">${escapeHtml(e.attrs.mapping_type)}</span>
+        </div>
+        ${e.attrs.mapping_note ? `<div class="text-xs text-gray-600 mt-1">📝 ${escapeHtml(e.attrs.mapping_note)}</div>` : ""}
+      </div>`);
+  }
+  // MERGED_WITH: 같은 3주기 그룹 내 다른 준거
+  const mergedOthers = [];
+  for (const e of adj.merged) {
+    const otherId = (e.source === node.id) ? e.target : e.source;
+    const other = state.nodesById.get(otherId);
+    if (!other) continue;
+    mergedOthers.push(other);
+  }
+  let mergedHtml = "";
+  if (mergedOthers.length) {
+    mergedHtml = `
+      <div class="item-diff kept">
+        <div class="text-xs text-gray-600 mb-1">같은 통합 그룹의 3주기 자매 준거:</div>
+        ${mergedOthers.map(o => `
+          <a data-jump="${o.id}" class="text-indigo-700 underline cursor-pointer text-sm">
+            ${o.attrs.criterion} · ${escapeHtml(o.attrs.title)}
+          </a>`).join(" / ")}
+      </div>`;
+  }
+
+  const isolated = node.attrs.cycle === "3" && adj.mapsOut.length === 0 && adj.mapsIn.length === 0;
+  const isolatedNew = node.attrs.cycle === "4" && adj.mapsIn.length === 0;
+
+  return `
+  <div class="panel-card">
+    <h3>② 확정 매핑 (MAPS_TO · MERGED_WITH)</h3>
+    ${rows.length ? rows.join("") : `<div class="text-xs text-gray-500">MAPS_TO 매핑 없음</div>`}
+    ${mergedHtml}
+    ${isolated ? `<div class="item-diff removed text-xs">⚠️ 3주기 준거이지만 4주기 매핑이 없음 → <b>삭제 후보</b></div>` : ""}
+    ${isolatedNew ? `<div class="item-diff added text-xs">✨ 4주기 준거이지만 3주기 매핑이 없음 → <b>신설 후보</b></div>` : ""}
+  </div>`;
+}
+
+function baseToDiffCls(base) {
+  return ({
+    "유지": "kept", "수정": "modified", "통합": "modified", "분할": "modified",
+    "이동": "modified", "복합": "modified", "신설": "added", "삭제": "removed",
+  })[base] || "kept";
+}
+
+function sectionItems(node, adj) {
+  const items = state.itemsByCrit.get(node.id) || [];
+  const rows = [];
+  if (items.length === 0) {
+    rows.push(`<div class="text-xs text-gray-500">항목 없음</div>`);
+  } else {
+    // subfield 그룹핑 (evidence 용)
+    const bySub = new Map();
+    for (const it of items) {
+      const k = it.attrs.subfield || "(본문)";
+      if (!bySub.has(k)) bySub.set(k, []);
+      bySub.get(k).push(it);
+    }
+    for (const [sub, arr] of bySub.entries()) {
+      if (sub !== "(본문)") rows.push(`<div class="text-xs font-semibold text-gray-600 mt-2">▸ ${escapeHtml(sub)} <span class="text-gray-400">(${arr.length})</span></div>`);
+      for (const it of arr) {
+        const text = it.attrs.text || "";
+        const note = it.attrs.mapping_note || "";
+        const diffCls = note
+          ? (/삭제/.test(note) ? "removed"
+            : /신설|추가/.test(note) ? "added"
+            : /이동|수정|변경|확장|간소화/.test(note) ? "modified" : "kept")
+          : "kept";
+        rows.push(`
+          <div class="item-diff ${diffCls}">
+            <div class="text-xs text-gray-400 font-mono">${it.attrs.item_key}</div>
+            <div>${escapeHtml(text)}</div>
+            ${note ? `<div class="text-xs text-gray-600 mt-1">📝 ${escapeHtml(note)}</div>` : ""}
+          </div>`);
+      }
+    }
+  }
+
+  // ITEM_MAPS_TO (inferred 매핑)
+  let itemMapsHtml = "";
+  if (adj.itemMaps.length) {
+    const uniq = new Map();
+    for (const e of adj.itemMaps) {
+      uniq.set(`${e.source}|${e.target}`, e);
+    }
+    itemMapsHtml = `
+      <div class="mt-2">
+        <div class="text-xs font-semibold text-gray-600 mb-1">자동 파싱된 ITEM_MAPS_TO (${uniq.size}):</div>
+        ${[...uniq.values()].map(e => {
+          const sCrit = itemToCritId(e.source);
+          const tCrit = itemToCritId(e.target);
+          return `
+          <div class="item-diff modified text-xs">
+            <a data-jump="${sCrit}" class="text-indigo-700 underline cursor-pointer">${e.source}</a>
+            →
+            <a data-jump="${tCrit}" class="text-indigo-700 underline cursor-pointer">${e.target}</a>
+            ${e.attrs.note ? `<div class="text-gray-600 mt-1">📝 ${escapeHtml(e.attrs.note)}</div>` : ""}
+          </div>`;
+        }).join("")}
+      </div>`;
+  }
+
+  return `
+  <div class="panel-card">
+    <h3>③ Item 수준 (${items.length}개 항목)</h3>
+    ${rows.join("")}
+    ${itemMapsHtml}
+  </div>`;
+}
+
+function sectionCrossPart(node, adj) {
+  // 현재 노드와 연결된 SIMILAR_TO 중 같은 cycle이면서 다른 part 에 있는 Criterion
+  // = "같은 주제가 다른 편람 섹션에 등장하는 관계"
+  const rows = [];
+  const seen = new Set();
+  for (const e of adj.similar) {
+    if (e.attrs.score_hybrid < state.ui.threshold) continue;
+    const otherId = (e.source === node.id) ? e.target : e.source;
+    const other = state.nodesById.get(otherId);
+    if (!other || other.type !== "Criterion") continue;
+    if (other.attrs.cycle !== node.attrs.cycle) continue; // same-cycle 만
+    if (other.attrs.part_key === node.attrs.part_key) continue; // 다른 part 만
+    if (seen.has(otherId)) continue;
+    seen.add(otherId);
+    rows.push({ other, score: e.attrs.score_hybrid });
+  }
+  rows.sort((a, b) => b.score - a.score);
+
+  if (rows.length === 0) {
+    return `
+    <div class="panel-card">
+      <h3>④ Cross-part 연결 (같은 주제가 다른 편람 섹션에)</h3>
+      <div class="text-xs text-gray-500">임계값 ${state.ui.threshold} 이상에서 다른 편람 섹션과의 연결 없음</div>
+    </div>`;
+  }
+  return `
+  <div class="panel-card">
+    <h3>④ Cross-part 연결 <span class="text-xs text-gray-500">(같은 주제가 5개 섹션 중 어디에 있는지 · ${rows.length})</span></h3>
+    ${rows.slice(0, 15).map(r => `
+      <div class="similar-row" data-jump="${r.other.id}">
+        <div class="flex-1">
+          <span class="text-xs text-gray-400">[${PART_LABELS[r.other.attrs.part_key]}]</span>
+          <span class="font-semibold">${escapeHtml(r.other.attrs.criterion)}</span>
+          <span>${escapeHtml(r.other.attrs.title || "")}</span>
+        </div>
+        <div class="text-xs font-mono text-indigo-600">${r.score.toFixed(3)}</div>
+      </div>`).join("")}
+  </div>`;
+}
+
+function sectionSimilar(node, adj) {
+  // Criterion-Criterion SIMILAR_TO, cross-cycle 만 우선, same-cycle/same-part 는 별도
+  const confirmedIds = new Set();
+  // 이미 MAPS_TO 로 확정된 상대 id
+  for (const e of adj.mapsOut)  confirmedIds.add(e.target);
+  for (const e of adj.mapsIn)   confirmedIds.add(e.source);
+
+  const buckets = { cross: [], same: [] };
+  for (const e of adj.similar) {
+    if (e.attrs.score_hybrid < state.ui.threshold) continue;
+    const otherId = (e.source === node.id) ? e.target : e.source;
+    const other = state.nodesById.get(otherId);
+    if (!other || other.type !== "Criterion") continue;
+    const isCrossCycle = other.attrs.cycle !== node.attrs.cycle;
+    const isConfirmed = confirmedIds.has(otherId);
+    const row = { other, score: e.attrs.score_hybrid, dense: e.attrs.score_dense, tfidf: e.attrs.score_tfidf, isConfirmed };
+    if (isCrossCycle) buckets.cross.push(row); else buckets.same.push(row);
+  }
+  buckets.cross.sort((a,b) => b.score - a.score);
+  buckets.same.sort((a,b) => b.score - a.score);
+
+  function renderRow(r) {
+    const cls = r.isConfirmed ? "" : "new-candidate";
+    const tag = r.isConfirmed
+      ? `<span class="text-[10px] bg-gray-200 text-gray-700 rounded px-1 py-0.5">확정</span>`
+      : `<span class="text-[10px] bg-yellow-200 text-yellow-800 rounded px-1 py-0.5">신규후보</span>`;
+    return `
+      <div class="similar-row ${cls}" data-jump="${r.other.id}">
+        <div class="flex-1">
+          ${tag}
+          <span class="text-xs text-gray-500">[${r.other.attrs.cycle}주기 · ${PART_LABELS[r.other.attrs.part_key]}]</span>
+          <span class="font-semibold">${escapeHtml(r.other.attrs.criterion)}</span>
+          <span>${escapeHtml(r.other.attrs.title || "")}</span>
+        </div>
+        <div class="text-xs font-mono text-indigo-600" title="dense=${r.dense} tfidf=${r.tfidf}">${r.score.toFixed(3)}</div>
+      </div>`;
+  }
+
+  const crossHtml = buckets.cross.length ? buckets.cross.slice(0, 10).map(renderRow).join("") : `<div class="text-xs text-gray-500">없음</div>`;
+  const sameHtml  = buckets.same.length  ? buckets.same.slice(0, 10).map(renderRow).join("")  : `<div class="text-xs text-gray-500">없음 (또는 same-cycle 옵션이 꺼져 있음)</div>`;
+
+  return `
+  <div class="panel-card">
+    <h3>⑤ SIMILAR_TO 임베딩 후보 <span class="text-xs text-gray-500">(threshold ${state.ui.threshold}, Criterion 쌍만)</span></h3>
+    <div class="mb-2">
+      <div class="text-xs font-semibold text-gray-700 mb-1">교차주기 (3↔4, ${buckets.cross.length}):</div>
+      ${crossHtml}
+    </div>
+    ${state.ui.showSameCycle ? `
+    <div>
+      <div class="text-xs font-semibold text-gray-700 mb-1">동일주기 (참고용, ${buckets.same.length}):</div>
+      ${sameHtml}
+    </div>` : `<div class="text-[11px] text-gray-400">💡 same-cycle 토글을 켜면 동일주기 후보도 표시됩니다.</div>`}
+    <div class="text-[10px] text-gray-400 mt-2">
+      ※ 신규후보 = 기존 MAPS_TO 에 없는 쌍 · 검토 가치가 있음. 한계: 하이브리드 임베딩은 법·제도 용어의 미세한 기준값 차이를 구분하지 못할 수 있음.
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+ * Tab 3: 신구조문 대비표
+ * =====================================================================*/
+
+/** 어절 단위 LCS diff. 반환: [{op:'eq'|'ins'|'del', tok}] */
+function tokenize(s) {
+  if (!s) return [];
+  // 공백을 독립 토큰으로 유지해 diff 후 원문 복원 가능
+  return s.split(/(\s+)/).filter(t => t.length > 0);
+}
+function diffWords(a, b) {
+  const A = tokenize(a), B = tokenize(b);
+  const n = A.length, m = B.length;
+  // 작은 경우 빠른 처리
+  if (n === 0) return B.map(t => ({ op: 'ins', tok: t }));
+  if (m === 0) return A.map(t => ({ op: 'del', tok: t }));
+  if (a === b) return A.map(t => ({ op: 'eq', tok: t }));
+
+  const dp = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      if (A[i-1] === B[j-1]) dp[i][j] = dp[i-1][j-1] + 1;
+      else dp[i][j] = Math.max(dp[i-1][j], dp[i][j-1]);
+    }
+  }
+  const ops = [];
+  let i = n, j = m;
+  while (i > 0 && j > 0) {
+    if (A[i-1] === B[j-1]) { ops.push({ op: 'eq', tok: A[i-1] }); i--; j--; }
+    else if (dp[i-1][j] >= dp[i][j-1]) { ops.push({ op: 'del', tok: A[i-1] }); i--; }
+    else { ops.push({ op: 'ins', tok: B[j-1] }); j--; }
+  }
+  while (i > 0) { ops.push({ op: 'del', tok: A[i-1] }); i--; }
+  while (j > 0) { ops.push({ op: 'ins', tok: B[j-1] }); j--; }
+  return ops.reverse();
+}
+
+/** 좌 셀(3주기)용 HTML: 삭제된 것은 취소선, 유지는 기본, 삽입은 표시 안 함 */
+function renderLeftCellHtml(ops) {
+  if (!ops.length) return "";
+  return ops.filter(o => o.op !== 'ins')
+    .map(o => o.op === 'eq'
+      ? `<span class="w-eq">${escapeHtml(o.tok)}</span>`
+      : `<span class="w-del">${escapeHtml(o.tok)}</span>`)
+    .join("");
+}
+/** 우 셀(4주기)용 HTML: 삽입된 것은 초록, 유지는 기본, 삭제는 표시 안 함 */
+function renderRightCellHtml(ops) {
+  if (!ops.length) return "";
+  return ops.filter(o => o.op !== 'del')
+    .map(o => o.op === 'eq'
+      ? `<span class="w-eq">${escapeHtml(o.tok)}</span>`
+      : `<span class="w-ins">${escapeHtml(o.tok)}</span>`)
+    .join("");
+}
+
+/** 4주기 준거에 대응하는 "비교 그룹" 계산
+ * - 같은 group_id + same mapping 에 속한 3주기 준거들(통합 소스)
+ * - 같은 group_id 의 다른 4주기 준거(분할 상대) — 참고용
+ */
+function buildCompareGroup(crit4) {
+  const adj = state.adj.get(crit4.id) || { mapsIn: [], mapsOut: [], merged: [], similar: [], itemMaps: [] };
+  // mapsIn = 3주기 → 4주기
+  const sources3 = [...new Set(adj.mapsIn.map(e => e.source))]
+    .map(id => state.nodesById.get(id))
+    .filter(Boolean);
+  sources3.sort((a, b) => compareCriterion(a.attrs.criterion, b.attrs.criterion));
+
+  // mapping_note / mapping_type — 첫 번째 mapsIn 기준 (N:1 이어도 note 는 동일 그룹)
+  let mapping_type = "";
+  let mapping_note = "";
+  if (adj.mapsIn.length) {
+    mapping_type = adj.mapsIn[0].attrs.mapping_type || "";
+    mapping_note = adj.mapsIn[0].attrs.mapping_note || "";
+  } else {
+    mapping_type = "신설";
+  }
+  return { crit4, sources3, mapping_type, mapping_note };
+}
+
+/** 주어진 criterion id 리스트에 대해 items 를 모두 합쳐 반환 (subfield + item_key 보존, 3주기 준거 순서대로) */
+function collectItems(critIds) {
+  const result = [];
+  for (const cid of critIds) {
+    const arr = state.itemsByCrit.get(cid) || [];
+    for (const it of arr) {
+      result.push(it);
+    }
+  }
+  return result;
+}
+
+/** 매칭용 정규화: 공백·문장부호·괄호 속 부연·특수기호 제거 후 소문자화 */
+function normalizeForMatch(s) {
+  if (!s) return "";
+  return String(s)
+    // 괄호 속 부연 (예: "(N:1)", "(3년 자료)") 제거
+    .replace(/\([^)]*\)/g, "")
+    // 공백·문장부호·구분기호 제거
+    .replace(/[\s·,.:;\-_/·\[\]{}<>"'`~!@#$%^&*+=|\\?]/g, "")
+    .toLowerCase();
+}
+/** 문자 2-gram 집합 반환 (짧은 문자열은 자기 자신 포함) */
+function ngramSet(s, n) {
+  n = n || 2;
+  const norm = normalizeForMatch(s);
+  if (norm.length < n) return new Set(norm ? [norm] : []);
+  const set = new Set();
+  for (let i = 0; i <= norm.length - n; i++) set.add(norm.slice(i, i + n));
+  return set;
+}
+/** 2-gram Jaccard 유사도 (0~1) */
+function jaccard2gram(a, b) {
+  const A = ngramSet(a, 2);
+  const B = ngramSet(b, 2);
+  if (A.size === 0 && B.size === 0) return 1;
+  if (A.size === 0 || B.size === 0) return 0;
+  let inter = 0;
+  for (const g of A) if (B.has(g)) inter++;
+  const union = A.size + B.size - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+/** 3주기 items ↔ 4주기 items 3-pass 매칭
+ *   Pass 1: subfield 그룹 내 normalizeForMatch 완전일치 → 'text_exact', score=1.0 (최우선: 가장 강한 신호)
+ *   Pass 2: (subfield + item_key) 동일 → 'key', score=1.0 (1:1 매핑에 강건, N:1 에서는 위 Pass 1 이 선점)
+ *   Pass 3: subfield 그룹 내 Jaccard ≥ threshold → 'text_fuzzy', score=<jac>
+ *   반환: [{ left, right, subfield, match_source, match_score }]
+ *   주의: Pass 순서 변경 이유 — 통합(N:1) 에서 item_key 가 우연히 같은 경우 텍스트가 전혀 다른 쌍이 먼저 선점되어
+ *        올바른 텍스트 일치 매칭이 막히는 문제가 있었음. 텍스트 완전일치가 item_key 보다 항상 강한 근거.
+ */
+function alignItemsByKey(items3, items4, opts) {
+  const threshold = (opts && opts.threshold != null) ? opts.threshold : 0.85;
+
+  const used3 = new Set();
+  const used4 = new Set();
+  const pairs = []; // { left, right, match_source, match_score }
+
+  // ---- PASS 1: subfield 그룹 내 정규화 완전일치 (최우선) ----
+  const norm3Map = new Map(); // (subfield||norm) → [items3]
+  for (const it of items3) {
+    const norm = (it.attrs.subfield || "") + "||" + normalizeForMatch(it.attrs.text || "");
+    if (!normalizeForMatch(it.attrs.text || "")) continue;
+    if (!norm3Map.has(norm)) norm3Map.set(norm, []);
+    norm3Map.get(norm).push(it);
+  }
+  for (const it of items4) {
+    const norm = (it.attrs.subfield || "") + "||" + normalizeForMatch(it.attrs.text || "");
+    if (!normalizeForMatch(it.attrs.text || "")) continue;
+    const arr = norm3Map.get(norm);
+    if (arr && arr.length > 0) {
+      const first = arr.shift();
+      used3.add(first);
+      used4.add(it);
+      pairs.push({ left: first, right: it, match_source: 'text_exact', match_score: 1.0 });
+    }
+  }
+
+  // ---- PASS 2: (subfield + item_key) 동일 — Pass 1 에서 매칭되지 않은 것만 ----
+  const keyOf = it => (it.attrs.subfield || "") + "||" + (it.attrs.item_key || "");
+  const key3Map = new Map();
+  for (const it of items3) {
+    if (used3.has(it)) continue;
+    const k = keyOf(it);
+    if (!it.attrs.item_key) continue;
+    if (!key3Map.has(k)) key3Map.set(k, []);
+    key3Map.get(k).push(it);
+  }
+  for (const it of items4) {
+    if (used4.has(it)) continue;
+    const k = keyOf(it);
+    const arr = key3Map.get(k);
+    if (arr && arr.length > 0) {
+      const first = arr.shift();
+      used3.add(first);
+      used4.add(it);
+      pairs.push({ left: first, right: it, match_source: 'key', match_score: 1.0 });
+    }
+  }
+
+  // ---- PASS 3: subfield 그룹 내 Jaccard ≥ threshold — greedy (점수 내림차순) ----
+  const left3 = items3.filter(i => !used3.has(i));
+  const right4 = items4.filter(i => !used4.has(i));
+  const candidates = [];
+  for (const l of left3) {
+    for (const r of right4) {
+      if ((l.attrs.subfield || "") !== (r.attrs.subfield || "")) continue;
+      const score = jaccard2gram(l.attrs.text || "", r.attrs.text || "");
+      if (score >= threshold) candidates.push({ l, r, score });
+    }
+  }
+  candidates.sort((a, b) => b.score - a.score);
+  for (const c of candidates) {
+    if (used3.has(c.l) || used4.has(c.r)) continue;
+    used3.add(c.l);
+    used4.add(c.r);
+    pairs.push({ left: c.l, right: c.r, match_source: 'text_fuzzy', match_score: c.score });
+  }
+
+  // ---- 최종 rows 조립: 4주기 items 순서 기준 ----
+  const pairsByRight = new Map();
+  const pairsByLeft = new Map();
+  for (const p of pairs) {
+    if (p.right) pairsByRight.set(p.right, p);
+    if (p.left) pairsByLeft.set(p.left, p);
+  }
+  const rows = [];
+  for (const r of items4) {
+    const p = pairsByRight.get(r);
+    if (p) {
+      rows.push({
+        left: p.left, right: r,
+        subfield: r.attrs.subfield || null,
+        match_source: p.match_source, match_score: p.match_score,
+      });
+    } else {
+      rows.push({
+        left: null, right: r,
+        subfield: r.attrs.subfield || null,
+        match_source: 'none', match_score: 0,
+      });
+    }
+  }
+  // 매칭 못 찾은 3주기 items 는 뒤에 단독 행
+  for (const l of items3) {
+    if (used3.has(l)) continue;
+    rows.push({
+      left: l, right: null,
+      subfield: l.attrs.subfield || null,
+      match_source: 'none', match_score: 0,
+    });
+  }
+  return rows;
+}
+
+function mappingBadgeHtml(mt) {
+  const base = mappingBase(mt);
+  return `<span class="badge b-${base}">${escapeHtml(mt || base)}</span>`;
+}
+
+/** 매칭 근거 태그 HTML */
+function matchTagHtml(source, score) {
+  if (!source || source === 'none') return "";
+  if (source === 'key') {
+    return `<span class="match-tag m-key" title="item_key 동일 매칭">🔑</span>`;
+  }
+  if (source === 'text_exact') {
+    return `<span class="match-tag m-exact" title="정규화 후 텍스트 완전일치 (공백·부호 제거)">≈ exact</span>`;
+  }
+  if (source === 'text_fuzzy') {
+    const s = (score || 0).toFixed(2);
+    return `<span class="match-tag m-fuzzy" title="2-gram Jaccard 유사도 ${s} — 텍스트 근사 매칭, 검토 권장">≈ ${s}</span>`;
+  }
+  return "";
+}
+
+/** 대비표 단일 테이블(하나의 4주기 준거 vs 여러 3주기) */
+function renderCompareTable(group) {
+  const { crit4, sources3, mapping_type, mapping_note } = group;
+  const base = mappingBase(mapping_type);
+
+  // 3주기 쪽 제목 셀 텍스트 만들기
+  let leftTitleHtml = "";
+  if (sources3.length === 0) {
+    leftTitleHtml = `<span class="text-gray-500 italic">(대응하는 3주기 준거 없음 — 신설)</span>`;
+  } else if (sources3.length === 1) {
+    const s = sources3[0];
+    const opsTitle = diffWords(s.attrs.title || "", crit4.attrs.title || "");
+    leftTitleHtml = `<span class="ikey">${s.attrs.criterion}</span>${renderLeftCellHtml(opsTitle)}`;
+  } else {
+    // 다수 3주기 → 각 준거를 열거
+    leftTitleHtml = sources3.map(s => {
+      const opsTitle = diffWords(s.attrs.title || "", crit4.attrs.title || "");
+      return `<div><span class="ikey">${s.attrs.criterion}</span>${renderLeftCellHtml(opsTitle)}</div>`;
+    }).join("");
+  }
+  // 4주기 쪽 제목
+  const combined3Title = sources3.map(s => s.attrs.title || "").join(" + ");
+  const opsRightTitle = diffWords(combined3Title, crit4.attrs.title || "");
+  const rightTitleHtml = `<span class="ikey">${crit4.attrs.criterion}</span>${renderRightCellHtml(opsRightTitle)}`;
+
+  // items
+  const items3 = collectItems(sources3.map(s => s.id));
+  const items4 = state.itemsByCrit.get(crit4.id) || [];
+  const rows = alignItemsByKey(items3, items4, { threshold: state.ui.itemMatchThr });
+
+  // 매칭 요약 통계
+  const stat = { key: 0, text_exact: 0, text_fuzzy: 0, none: 0 };
+  for (const r of rows) {
+    if (r.left && r.right) stat[r.match_source || 'key']++;
+    else stat.none++;
+  }
+
+  // item 행 HTML
+  let rowsHtml = rows.map(r => {
+    let leftText = r.left ? r.left.attrs.text : "";
+    let rightText = r.right ? r.right.attrs.text : "";
+    const ops = diffWords(leftText, rightText);
+    const subTag = r.subfield ? `<span class="subfield-tag">${escapeHtml(r.subfield)}</span>` : "";
+    const leftKeyTag = r.left?.attrs.item_key ? `<span class="ikey">${escapeHtml(r.left.attrs.item_key)}</span>` : "";
+    const rightKeyTag = r.right?.attrs.item_key ? `<span class="ikey">${escapeHtml(r.right.attrs.item_key)}</span>` : "";
+    let cls = "row-kept";
+    let leftCell, rightCell;
+    if (!r.left && r.right) {
+      cls = "row-modified";
+      leftCell = `<td class="cell-new">(신설)</td>`;
+      rightCell = `<td>${subTag}${rightKeyTag}${renderRightCellHtml(ops)}${r.right.attrs.mapping_note ? `<div class="mt-1 text-[11px] text-amber-700">📝 ${escapeHtml(r.right.attrs.mapping_note)}</div>`:""}</td>`;
+    } else if (r.left && !r.right) {
+      cls = "row-modified";
+      leftCell = `<td>${subTag}${leftKeyTag}${renderLeftCellHtml(ops)}${r.left.attrs.mapping_note ? `<div class="mt-1 text-[11px] text-amber-700">📝 ${escapeHtml(r.left.attrs.mapping_note)}</div>`:""}</td>`;
+      rightCell = `<td class="cell-del">(삭제됨)</td>`;
+    } else {
+      // 양쪽 모두 매칭됨 — match_source 에 따라 태그 표시 + row 클래스 조정
+      const changed = ops.some(o => o.op !== 'eq');
+      if (r.match_source === 'text_fuzzy') {
+        cls = "row-fuzzy";
+      } else {
+        cls = changed ? "row-modified" : "row-kept";
+      }
+      const tag = matchTagHtml(r.match_source, r.match_score);
+      leftCell  = `<td>${tag}${subTag}${leftKeyTag}${renderLeftCellHtml(ops)}</td>`;
+      const note = r.right.attrs.mapping_note || r.left.attrs.mapping_note || "";
+      rightCell = `<td>${subTag}${rightKeyTag}${renderRightCellHtml(ops)}${note ? `<div class="mt-1 text-[11px] text-amber-700">📝 ${escapeHtml(note)}</div>`:""}</td>`;
+    }
+    return `<tr class="${cls}">${leftCell}${rightCell}</tr>`;
+  }).join("");
+  if (!rowsHtml) rowsHtml = `<tr><td colspan="2" class="text-center text-gray-400 italic">항목 없음</td></tr>`;
+
+  // 메타(매핑 정보) 행
+  const metaHtml = (mapping_type || mapping_note) ? `
+    <tr class="row-meta">
+      <td colspan="2">
+        ${mappingBadgeHtml(mapping_type)}
+        ${mapping_note ? `<span class="ml-2">📝 ${escapeHtml(mapping_note)}</span>` : ""}
+      </td>
+    </tr>` : "";
+
+  // 그룹 자매 준거 안내 (N:1 통합)
+  const mergedSiblingsHtml = sources3.length > 1 ? `
+    <div class="cell-merged-note text-[11px] mb-1">
+      🔗 <b>통합(N:1)</b> — 3주기 ${sources3.map(s => s.attrs.criterion).join(" + ")} 이(가) 4주기 ${crit4.attrs.criterion} 로 통합됨
+    </div>` : "";
+
+  // 매칭 통계 배너 (key/exact/fuzzy/unmatched)
+  const matchStatHtml = `
+    <div class="text-[11px] text-gray-600 mb-1 flex flex-wrap gap-2 items-center">
+      <span class="font-semibold">item 매칭:</span>
+      <span class="match-tag m-key" title="item_key 동일 매칭">🔑 ${stat.key}</span>
+      <span class="match-tag m-exact" title="정규화 텍스트 완전일치">≈ exact ${stat.text_exact}</span>
+      <span class="match-tag m-fuzzy" title="2-gram Jaccard ≥ ${state.ui.itemMatchThr.toFixed(2)} 근사 매칭">≈ fuzzy ${stat.text_fuzzy}</span>
+      <span class="text-gray-400">· 미매칭 ${stat.none}</span>
+      <span class="ml-auto text-gray-400 text-[10px]">임계값 조정은 상단 'item 매칭 ≥' 슬라이더</span>
+    </div>`;
+
+  return `
+    <div class="mb-5">
+      ${mergedSiblingsHtml}
+      ${matchStatHtml}
+      <table class="cmp-table">
+        <thead><tr><th class="c3">3주기</th><th>4주기</th></tr></thead>
+        <tbody>
+          <tr class="row-title">
+            <td>${leftTitleHtml}</td>
+            <td>${rightTitleHtml}</td>
+          </tr>
+          ${metaHtml}
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+/** 좌 네비 렌더: 현재 편람의 4주기 준거 목록, 필터 적용 */
+function renderCompareNav() {
+  const pk = state.ui.part;
+  const ids4 = state.critIds["4"][pk];
+  const search = state.ui.search.trim().toLowerCase();
+  const wrap = document.getElementById("cmp-nav-list");
+  wrap.innerHTML = "";
+
+  let visible = 0;
+  let totalChanged = 0;
+  let totalKept = 0;
+
+  for (const cid of ids4) {
+    const n = state.nodesById.get(cid);
+    const group = buildCompareGroup(n);
+    const base = mappingBase(group.mapping_type);
+    const isKept = base === "유지";
+    if (isKept) totalKept++; else totalChanged++;
+    // 필터: 신설·변경만 ON 이면 유지 제외
+    if (state.ui.changedOnly && isKept) continue;
+    if (search) {
+      if (!(n.attrs.title||"").toLowerCase().includes(search)
+          && !cid.includes(search)) continue;
+    }
+    visible++;
+    const item = document.createElement("div");
+    item.className = "cmp-nav-item" + (state.ui.compareSelected === cid ? " selected" : "");
+    item.dataset.critId = cid;
+    // 3주기 소스 정보 요약
+    const srcInfo = group.sources3.length === 0
+      ? "(신설)"
+      : group.sources3.map(s => s.attrs.criterion).join(" + ");
+    item.innerHTML = `
+      <div><span class="cmp-no">${n.attrs.criterion}</span>
+        <span class="cmp-title">${escapeHtml(n.attrs.title || "")}</span>
+        ${mappingBadgeHtml(group.mapping_type)}
+      </div>
+      <div class="cmp-meta">← 3주기 ${escapeHtml(srcInfo)}</div>`;
+    item.addEventListener("click", () => selectCompareCrit(cid));
+    wrap.appendChild(item);
+  }
+  document.getElementById("cmp-nav-stat").textContent =
+    `표시 ${visible} / 변경 ${totalChanged} · 유지 ${totalKept}`;
+}
+
+function renderCompareBody() {
+  const sel = state.ui.compareSelected;
+  const body = document.getElementById("cmp-body");
+  if (!sel) {
+    body.innerHTML = `
+      <div class="cmp-empty">
+        ← 좌측에서 4주기 준거를 선택하면 3주기와의 대비표가 표시됩니다.<br />
+        <span class="text-xs text-gray-400">법령 신구조문 대비표 형식. 어절 단위 diff: <span class="w-ins">추가</span> / <span class="w-del">삭제</span></span>
+      </div>`;
+    return;
+  }
+  const node = state.nodesById.get(sel);
+  if (!node) { body.innerHTML = `<div class="cmp-empty">노드 없음: ${sel}</div>`; return; }
+  const group = buildCompareGroup(node);
+
+  // 헤더
+  const pkLabel = PART_LABELS[node.attrs.part_key] || node.attrs.part_key;
+  const headerHtml = `
+    <div class="mb-3">
+      <div class="text-xs text-gray-500 mb-1">${escapeHtml(pkLabel)} · 그룹 #${node.attrs.group_id ?? "-"} · ${escapeHtml(node.attrs.theme || "")}</div>
+      <div class="flex items-center gap-3">
+        <div class="text-2xl font-bold text-indigo-700">4주기 ${escapeHtml(node.attrs.criterion)} · ${escapeHtml(node.attrs.title || "")}</div>
+        ${mappingBadgeHtml(group.mapping_type)}
+      </div>
+    </div>`;
+
+  // 대비표 본문
+  const tableHtml = renderCompareTable(group);
+
+  body.innerHTML = headerHtml + tableHtml;
+  // 스크롤 맨 위로
+  body.scrollTop = 0;
+}
+
+function selectCompareCrit(cid) {
+  state.ui.compareSelected = cid;
+  renderCompareNav();
+  renderCompareBody();
+}
+
+/* =====================================================================
+ * 이벤트 핸들러 & 라우팅
+ * =====================================================================*/
+function selectCriterion(cid) {
+  state.ui.selected = cid;
+  renderLists();
+  renderCenterSvg();
+  renderImpact();
+  // Tab 2 가 닫혀있으면 살짝 주의 표시만
+}
+
+function switchTab(tab) {
+  if (!tab) return;
+  state.ui.activeTab = tab;
+  document.querySelectorAll("#tabs .tab-button").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === tab);
+  });
+  // class 'hidden' + inline display 둘 다 제어 (Tab 3 는 inline style 로 display:none 초기화됨)
+  const explore = document.getElementById("tab-explore");
+  const impact  = document.getElementById("tab-impact");
+  const compare = document.getElementById("tab-compare");
+  explore.classList.toggle("hidden", tab !== "explore");
+  impact.classList.toggle("hidden", tab !== "impact");
+  compare.classList.toggle("hidden", tab !== "compare");
+  compare.style.display = (tab === "compare") ? "flex" : "none";
+
+  if (tab === "explore") {
+    // 레이아웃 복귀 후 svg 재렌더
+    requestAnimationFrame(() => renderCenterSvg());
+  } else if (tab === "compare") {
+    // Tab 3 진입 시 네비·본문 렌더
+    renderCompareNav();
+    renderCompareBody();
+  }
+}
+
+function bindEvents() {
+  // 탭
+  document.querySelectorAll("#tabs .tab-button").forEach(b => {
+    b.addEventListener("click", () => {
+      if (b.dataset.disabled) return;
+      switchTab(b.dataset.tab);
+    });
+  });
+  // Part 드롭다운
+  document.getElementById("part-select").addEventListener("change", ev => {
+    state.ui.part = ev.target.value;
+    state.ui.selected = null;
+    state.ui.compareSelected = null;  // Tab 3 선택도 초기화
+    renderAll();
+  });
+  // Tab 3 '신설·변경만' 토글
+  const cho = document.getElementById("changed-only-toggle");
+  if (cho) {
+    cho.addEventListener("change", ev => {
+      state.ui.changedOnly = ev.target.checked;
+      renderCompareNav();
+    });
+  }
+  // threshold 슬라이더
+  const thr = document.getElementById("thr-slider");
+  thr.addEventListener("input", ev => {
+    state.ui.threshold = parseFloat(ev.target.value);
+    document.getElementById("thr-val").textContent = state.ui.threshold.toFixed(2);
+    renderCenterSvg();
+    renderImpact();
+  });
+  // item 매칭 임계값 슬라이더 (Tab 3)
+  const itemThr = document.getElementById("item-thr-slider");
+  if (itemThr) {
+    itemThr.addEventListener("input", ev => {
+      state.ui.itemMatchThr = parseFloat(ev.target.value);
+      document.getElementById("item-thr-val").textContent = state.ui.itemMatchThr.toFixed(2);
+      // Tab 3 본문만 재렌더 (네비는 매핑 상태에 독립적이라 불필요)
+      if (state.ui.activeTab === "compare") renderCompareBody();
+    });
+  }
+  // same-cycle 토글
+  document.getElementById("same-cycle-toggle").addEventListener("change", ev => {
+    state.ui.showSameCycle = ev.target.checked;
+    renderCenterSvg();
+    renderImpact();
+  });
+  // 검색
+  const sb = document.getElementById("search-box");
+  let searchT = null;
+  sb.addEventListener("input", ev => {
+    clearTimeout(searchT);
+    searchT = setTimeout(() => {
+      state.ui.search = ev.target.value;
+      renderLists();
+      renderCenterSvg();
+      renderCompareNav();
+    }, 180);
+  });
+  // 초기화
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    state.ui.selected = null;
+    state.ui.compareSelected = null;
+    state.ui.search = "";
+    document.getElementById("search-box").value = "";
+    renderAll();
+  });
+  // 스크롤 시 SVG 재렌더
+  document.getElementById("left-list").addEventListener("scroll", debounce(renderCenterSvg, 30));
+  document.getElementById("right-list").addEventListener("scroll", debounce(renderCenterSvg, 30));
+  // 윈도우 리사이즈
+  window.addEventListener("resize", debounce(() => renderCenterSvg(), 80));
+  // 단축키
+  window.addEventListener("keydown", ev => {
+    if (ev.target.tagName === "INPUT") return;
+    if (ev.key === "1") switchTab("explore");
+    else if (ev.key === "2") switchTab("impact");
+    else if (ev.key === "3") switchTab("compare");
+    else if (ev.key === "Escape") {
+      state.ui.selected = null;
+      state.ui.compareSelected = null;
+      renderAll();
+    }
+  });
+}
+
+function renderAll() {
+  renderLists();
+  // SVG 는 DOM 이 실제 그려진 뒤 측정해야 정확
+  requestAnimationFrame(() => renderCenterSvg());
+  renderImpact();
+  // Tab 3 네비는 항상 갱신 (편람 변경·검색 변경 시 반영). 본문은 선택된 준거가 있을 때만.
+  renderCompareNav();
+  if (state.ui.activeTab === "compare") renderCompareBody();
+}
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function debounce(fn, ms) {
+  let t;
+  return function(...a) { clearTimeout(t); t = setTimeout(() => fn.apply(this, a), ms); };
+}
+
+/* =====================================================================
+ * 부팅
+ * =====================================================================*/
+(async function boot() {
+  try {
+    await loadData();
+    document.getElementById("loading").remove();
+    bindEvents();
+    renderAll();
+  } catch (err) {
+    console.error(err);
+    document.getElementById("loading").innerHTML = `
+      <div class="text-red-500">
+        <div>데이터 로드 실패.</div>
+        <div class="text-xs mt-1">python serve.py 로 서버를 실행해 주세요. (file:// 로 열면 CORS 가 막힙니다)</div>
+        <div class="text-xs mt-1 font-mono">${escapeHtml(err.message || err)}</div>
+      </div>`;
+  }
+})();
+</script>
+
+</body>
+</html>

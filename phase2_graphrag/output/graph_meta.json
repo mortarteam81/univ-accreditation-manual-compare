@@ -1,0 +1,165 @@
+{
+  "version": "phase2.v1",
+  "built_at": "2026-04-23T09:06:42",
+  "schema": {
+    "node_types": [
+      "Cycle",
+      "Part",
+      "Criterion",
+      "Item"
+    ],
+    "edge_types": [
+      "CONTAINS",
+      "MAPS_TO",
+      "MERGED_WITH",
+      "SPLIT_INTO",
+      "MOVED_TO",
+      "ITEM_MAPS_TO",
+      "SIMILAR_TO"
+    ],
+    "id_patterns": {
+      "Cycle": "cycle_{3|4}",
+      "Part": "part_{overview|report|evidence|checkpoints|notes}",
+      "Criterion": "crit_{cycle}_{part_key}_{criterion_number}",
+      "Item": "item_{cycle}_{part_key}_{criterion_number}_{item_key}"
+    }
+  },
+  "totals": {
+    "nodes": 1576,
+    "edges": 1967,
+    "nodes_by_type": {
+      "Cycle": 2,
+      "Part": 5,
+      "Criterion": 270,
+      "Item": 1299
+    },
+    "edges_by_type": {
+      "CONTAINS": 1604,
+      "MAPS_TO": 160,
+      "MERGED_WITH": 43,
+      "ITEM_MAPS_TO": 160
+    },
+    "item_maps_to_edges": 160,
+    "embed_targets": 1569
+  },
+  "per_part": {
+    "overview": {
+      "label": "편람 개요 비교",
+      "source_file": "편람 개요 비교_검수완료.json",
+      "criterion_4_count": 24,
+      "criterion_3_count": 32,
+      "item_count": 56,
+      "mapping_type_dist": {
+        "통합 (N:1)": 3,
+        "이동 (1:1)": 1,
+        "이동·통합 (N:1)": 1,
+        "통합·이동 (N:1)": 3,
+        "유지 (1:1)": 15,
+        "통합·분리 (N:1)": 1
+      },
+      "isolated_cycle3_criterion_count": 0
+    },
+    "report": {
+      "label": "편람 보고서 주요내용 비교",
+      "source_file": "편람 보고서 주요내용 비교_검수완료.json",
+      "criterion_4_count": 24,
+      "criterion_3_count": 32,
+      "item_count": 252,
+      "mapping_type_dist": {
+        "통합 (N:1)": 3,
+        "이동 (1:1)": 1,
+        "이동·통합 (N:1)": 1,
+        "통합·이동 (N:1)": 3,
+        "유지 (1:1)": 15,
+        "통합·분리 (N:1)": 1
+      },
+      "isolated_cycle3_criterion_count": 0
+    },
+    "evidence": {
+      "label": "편람 근거자료 비교",
+      "source_file": "편람 근거자료 비교_검수완료.json",
+      "criterion_4_count": 24,
+      "criterion_3_count": 31,
+      "item_count": 474,
+      "mapping_type_dist": {
+        "통합 (N:1)": 3,
+        "이동·확장 (1:1)": 2,
+        "이동·통합 (N:1)": 1,
+        "통합·이동 (N:1)": 2,
+        "유지 (1:1)": 8,
+        "유지·간소화 (1:1)": 1,
+        "유지·확장 (1:1)": 6,
+        "통합·분리 (N:1)": 1
+      },
+      "isolated_cycle3_criterion_count": 0
+    },
+    "checkpoints": {
+      "label": "편람 주요 점검사항 비교",
+      "source_file": "편람 주요 점검사항 비교_검수완료.json",
+      "criterion_4_count": 24,
+      "criterion_3_count": 33,
+      "item_count": 289,
+      "mapping_type_dist": {
+        "통합 (N:1)": 3,
+        "이동 (1:1)": 1,
+        "이동·통합 (N:1)": 1,
+        "통합·이동 (N:1)": 3,
+        "수정 (1:1)": 14,
+        "유지 (1:1)": 1,
+        "통합·분리 (N:1)": 1
+      },
+      "isolated_cycle3_criterion_count": 0
+    },
+    "notes": {
+      "label": "편람 유의사항 및 관련정책 비교",
+      "source_file": "편람 유의사항 및 관련정책 비교_검수완료.json",
+      "criterion_4_count": 24,
+      "criterion_3_count": 32,
+      "item_count": 243,
+      "mapping_type_dist": {
+        "통합 (N:1)": 3,
+        "이동 (1:1)": 1,
+        "이동·통합 (N:1)": 1,
+        "통합·이동 (N:1)": 3,
+        "유지 (1:1)": 15,
+        "통합·분리 (N:1)": 1
+      },
+      "isolated_cycle3_criterion_count": 0
+    }
+  },
+  "mapping_type_system": {
+    "base_types": [
+      "유지",
+      "수정",
+      "통합",
+      "분할",
+      "이동",
+      "신설",
+      "삭제"
+    ],
+    "cardinality": [
+      "1:1",
+      "N:1",
+      "1:N"
+    ],
+    "observed": [
+      "수정 (1:1)",
+      "유지 (1:1)",
+      "유지·간소화 (1:1)",
+      "유지·확장 (1:1)",
+      "이동 (1:1)",
+      "이동·통합 (N:1)",
+      "이동·확장 (1:1)",
+      "통합 (N:1)",
+      "통합·분리 (N:1)",
+      "통합·이동 (N:1)"
+    ],
+    "note": "주요점검사항 파일의 '변경됨 (1:1)'은 Phase 1 검수에서 '수정 (1:1)' 또는 '유지 (1:1)'로 통일됨. 원본은 각 그룹의 mapping_type_original 필드에 보존 (존재하는 경우)."
+  },
+  "limitations": [
+    "ITEM_MAPS_TO 엣지는 mapping_note 에서 '4주기 X.Y itemN' 패턴을 자동 파싱한 경우에만 생성. 자연어로만 기술된 매핑(예: '4주기에서 삭제됨')은 노드 attrs.mapping_note 에만 보존.",
+    "SPLIT_INTO/MOVED_TO 는 group_id 단위로는 완전 표현 불가(한 group 이 여러 4주기 준거를 가리키는 구조가 아니어서). 이 정보는 MAPS_TO 엣지의 attrs.mapping_base / attrs.mapping_type 으로만 표기됨.",
+    "SIMILAR_TO 엣지는 사용자 PC의 build_embeddings.py 실행으로 생성됨. 기본 그래프에는 없음.",
+    "삭제된 3주기 항목(4주기에 매핑 없음)은 MAPS_TO 엣지 없이 고립 노드로 남음."
+  ]
+}

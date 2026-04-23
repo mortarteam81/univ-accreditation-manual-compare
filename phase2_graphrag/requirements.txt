@@ -1,0 +1,9 @@
+# Phase 2 임베딩 생성용 (사용자 PC에서 실행)
+# Python 3.9+ 권장. CPU 환경에서도 동작합니다.
+
+numpy>=1.23
+scikit-learn>=1.2
+# 다국어 Sentence-Transformers 모델을 구동. torch 가 자동 설치됨.
+sentence-transformers>=2.5.0
+# torch: sentence-transformers 가 자동으로 가져오지만, 환경에 따라 별도 설치가 필요할 수 있음.
+# GPU 사용 시 https://pytorch.org/get-started/locally/ 참고.

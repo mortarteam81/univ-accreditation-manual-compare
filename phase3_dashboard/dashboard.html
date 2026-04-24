@@ -154,6 +154,8 @@
   .match-tag.m-key       { background: #e0e7ff; color: #3730a3; }
   .match-tag.m-exact     { background: #d1fae5; color: #065f46; }
   .match-tag.m-fuzzy     { background: #fef3c7; color: #92400e; }
+  .cmp-table tr.row-same > td { background: #f8fafc; }
+  .cmp-table tr.row-similar > td { background: #fffceb; }
   .cmp-table tr.row-fuzzy > td { background: #fffceb; }
   /* 좌 네비 */
   .cmp-nav-header {
@@ -173,6 +175,107 @@
   .cmp-empty {
     text-align: center; color: #94a3b8; font-size: 13px;
     padding: 40px 20px;
+  }
+  /* Tab 4: 검증 매핑표 */
+  .verify-head {
+    padding: 10px 14px; border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc; font-size: 12px; color: #475569;
+  }
+  .verify-body {
+    background: #fafbff; padding: 14px;
+  }
+  .verify-table {
+    width: 100%; border-collapse: collapse; background: white;
+    font-size: 13px; line-height: 1.5;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .verify-table th, .verify-table td {
+    border: 1px solid #cbd5e1; padding: 10px 12px; vertical-align: top;
+  }
+  .verify-table th {
+    background: #0f766e; color: white;
+    font-weight: 700; font-size: 12px; text-align: center;
+  }
+  .verify-table th.v-right { background: #334155; }
+  .verify-title {
+    font-weight: 700; color: #1f2937;
+  }
+  .verify-meta {
+    margin-top: 4px; font-size: 11px; color: #6b7280;
+  }
+  .verify-list {
+    margin-top: 6px; padding-left: 18px; font-size: 12px; color: #374151;
+  }
+  .verify-list li { margin: 2px 0; white-space: normal; overflow-wrap: anywhere; }
+  .verify-list li.verify-blank { min-height: 1.55em; }
+  .verify-subfield {
+    margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 6px;
+    background: #f8fafc; padding: 7px 8px;
+  }
+  .verify-subhead {
+    font-size: 11px; font-weight: 700; color: #0f172a;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .verify-subcount {
+    font-size: 10px; color: #64748b; font-weight: 600;
+  }
+  .verify-src-tag {
+    display: inline-block; margin-right: 6px; padding: 1px 5px;
+    border-radius: 9999px; background: #ede9fe; color: #5b21b6;
+    font-size: 10px; font-weight: 600; vertical-align: middle;
+  }
+  .verify-match-tag {
+    display: inline-block; margin-right: 6px; padding: 1px 5px;
+    border-radius: 9999px; background: #dbeafe; color: #1d4ed8;
+    font-size: 10px; font-weight: 600; vertical-align: middle;
+  }
+  .verify-source {
+    border: 1px solid #e2e8f0; border-radius: 6px; padding: 7px 8px; margin-bottom: 6px;
+    background: #f8fafc;
+  }
+  .verify-source:last-child { margin-bottom: 0; }
+  .verify-empty {
+    color: #94a3b8; font-style: italic;
+  }
+  .verify-criteria {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .verify-criterion {
+    border: 1px solid #cbd5e1; border-radius: 8px; background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .verify-crit-head {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+  }
+  .verify-crit-col {
+    padding: 10px 12px;
+  }
+  .verify-crit-col + .verify-crit-col {
+    border-left: 1px solid #e2e8f0;
+  }
+  .verify-subfield-wrap {
+    padding: 8px 10px 10px;
+  }
+  .verify-pair-table {
+    width: 100%; border-collapse: collapse; table-layout: fixed; background: white;
+  }
+  .verify-pair-table td {
+    width: 50%; padding: 7px 10px; vertical-align: top;
+    border-top: 1px solid #eef2f7; /* 흐릿한 수평선 */
+  }
+  .verify-pair-table td + td {
+    border-left: 1px solid #eef2f7;
+  }
+  .verify-note {
+    padding: 6px 10px 10px;
+    font-size: 11px; color: #6b7280;
+  }
+  .verify-line-empty {
+    color: transparent;
+    user-select: none;
   }
   /* 인쇄 친화 */
   @media print {
@@ -198,6 +301,7 @@
     <button class="tab-button active" data-tab="explore">① 매핑 탐색</button>
     <button class="tab-button" data-tab="impact">② 영향도</button>
     <button class="tab-button" data-tab="compare">③ 신구조문 대비표</button>
+    <button class="tab-button" data-tab="verify">④ 검증 매핑표</button>
   </nav>
 
   <div class="flex items-center gap-3 ml-auto flex-wrap">
@@ -217,7 +321,7 @@
       <input id="thr-slider" type="range" min="0.55" max="1.0" step="0.01" value="0.75" class="w-24" />
     </label>
 
-    <label class="text-xs text-gray-600 flex items-center gap-1" title="Tab 3 신구조문 대비표에서 item 매칭에 사용하는 2-gram Jaccard 임계값">
+    <label class="text-xs text-gray-600 flex items-center gap-1" title="Tab 3 신구조문 대비표에서 item 매칭에 사용하는 hybrid 유사도 임계값">
       item 매칭 ≥ <span id="item-thr-val" class="font-mono font-semibold text-emerald-700">0.85</span>
       <input id="item-thr-slider" type="range" min="0.75" max="0.95" step="0.01" value="0.85" class="w-20" />
     </label>
@@ -314,6 +418,15 @@
       </div>
     </div>
   </section>
+
+  <!-- ---- Tab 4: 검증 매핑표 ---- -->
+  <section id="tab-verify" class="h-full hidden flex flex-col">
+    <div class="verify-head flex items-center justify-between">
+      <span><b>검증 용도</b> · 4주기 준거(좌)와 매칭되는 3주기 준거(우)를 순서대로 비교</span>
+      <span id="verify-stat" class="text-[11px] text-gray-500"></span>
+    </div>
+    <div class="verify-body scroll-y flex-1" id="verify-body"></div>
+  </section>
 </main>
 
 <div id="loading">데이터 로딩 중…</div>
@@ -377,8 +490,9 @@ const state = {
     activeTab: "explore",
     compareSelected: null,  // Tab 3: 선택된 4주기 criterion id
     changedOnly: true,      // Tab 3: 신설·변경만 보기
-    itemMatchThr: 0.85,     // Tab 3: item 매칭 Jaccard 임계값 (0.75~0.95)
+    itemMatchThr: 0.85,     // Tab 3: item 매칭 hybrid 유사도 임계값 (0.75~0.95)
   },
+  verifyOwnerCache: new Map(),
 };
 
 /* ---- 데이터 로드 ---- */
@@ -472,6 +586,23 @@ function compareCriterion(a, b) {
     if (x !== y) return x - y;
   }
   return 0;
+}
+
+function compareItemKey(a, b) {
+  const sa = String(a || "");
+  const sb = String(b || "");
+  const ma = sa.match(/^(.*?)(\d+)$/);
+  const mb = sb.match(/^(.*?)(\d+)$/);
+  if (ma && mb) {
+    const pa = ma[1], pb = mb[1];
+    if (pa !== pb) return pa.localeCompare(pb, "ko");
+    const na = Number(ma[2]), nb = Number(mb[2]);
+    if (na !== nb) return na - nb;
+    return sa.localeCompare(sb, "ko");
+  }
+  if (ma && !mb) return -1;
+  if (!ma && mb) return 1;
+  return sa.localeCompare(sb, "ko");
 }
 
 function itemToCritId(itemId) {
@@ -1122,14 +1253,35 @@ function collectItems(critIds) {
   return result;
 }
 
-/** 매칭용 정규화: 공백·문장부호·괄호 속 부연·특수기호 제거 후 소문자화 */
-function normalizeForMatch(s) {
+/** 평가기간 boilerplate 제거: 표시 텍스트는 유지하되, 유사도 계산에서는 의미 신호에서 제외 */
+function stripEvaluationPeriodBoilerplate(s) {
   if (!s) return "";
   return String(s)
+    // 대학기관평가인증은 대부분 3년 평가기간이 전제이므로 item 의미 비교에서는 노이즈로 본다.
+    .replace(/최근\s*3\s*(?:개\s*)?년(?:간)?\s*(?:자료|실적|현황)?/gi, " ")
+    .replace(/최근\s*삼\s*(?:개\s*)?년(?:간)?\s*(?:자료|실적|현황)?/g, " ")
+    .replace(/3\s*(?:개\s*)?년(?:간)?\s*자료/gi, " ")
+    .replace(/삼\s*(?:개\s*)?년(?:간)?\s*자료/g, " ");
+}
+
+/** 매칭용 정규화: 평가기간 boilerplate·공백·문장부호·괄호 속 부연·특수기호 제거 후 소문자화 */
+function normalizeForMatch(s) {
+  if (!s) return "";
+  return stripEvaluationPeriodBoilerplate(s)
     // 괄호 속 부연 (예: "(N:1)", "(3년 자료)") 제거
     .replace(/\([^)]*\)/g, "")
     // 공백·문장부호·구분기호 제거
     .replace(/[\s·,.:;\-_/·\[\]{}<>"'`~!@#$%^&*+=|\\?]/g, "")
+    .toLowerCase();
+}
+/** 토큰 매칭용 정규화: 단어 경계는 유지하되 노이즈만 제거 */
+function normalizeForTokenMatch(s) {
+  if (!s) return "";
+  return stripEvaluationPeriodBoilerplate(s)
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/[·,.:;\-_/·\[\]{}<>"'`~!@#$%^&*+=|\\?]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
     .toLowerCase();
 }
 /** 문자 2-gram 집합 반환 (짧은 문자열은 자기 자신 포함) */
@@ -1152,17 +1304,100 @@ function jaccard2gram(a, b) {
   const union = A.size + B.size - inter;
   return union > 0 ? inter / union : 0;
 }
+/** 토큰 Jaccard 유사도 (공백 토큰 기준) */
+function tokenJaccard(a, b) {
+  const ta = normalizeForTokenMatch(a).split(" ").filter(Boolean);
+  const tb = normalizeForTokenMatch(b).split(" ").filter(Boolean);
+  const A = new Set(ta);
+  const B = new Set(tb);
+  if (A.size === 0 && B.size === 0) return 1;
+  if (A.size === 0 || B.size === 0) return 0;
+  let inter = 0;
+  for (const t of A) if (B.has(t)) inter++;
+  const union = A.size + B.size - inter;
+  return union > 0 ? inter / union : 0;
+}
+/** 문자/토큰 신호를 합친 item 텍스트 유사도 */
+function hybridItemSimilarity(a, b) {
+  const c2 = jaccard2gram(a, b);
+  const tok = tokenJaccard(a, b);
+  let score = 0.65 * c2 + 0.35 * tok;
+  const na = normalizeForMatch(a);
+  const nb = normalizeForMatch(b);
+  if (na && nb && (na.includes(nb) || nb.includes(na))) score += 0.08;
+  return Math.min(1, score);
+}
 
-/** 3주기 items ↔ 4주기 items 3-pass 매칭
- *   Pass 1: subfield 그룹 내 normalizeForMatch 완전일치 → 'text_exact', score=1.0 (최우선: 가장 강한 신호)
- *   Pass 2: (subfield + item_key) 동일 → 'key', score=1.0 (1:1 매핑에 강건, N:1 에서는 위 Pass 1 이 선점)
- *   Pass 3: subfield 그룹 내 Jaccard ≥ threshold → 'text_fuzzy', score=<jac>
- *   반환: [{ left, right, subfield, match_source, match_score }]
- *   주의: Pass 순서 변경 이유 — 통합(N:1) 에서 item_key 가 우연히 같은 경우 텍스트가 전혀 다른 쌍이 먼저 선점되어
- *        올바른 텍스트 일치 매칭이 막히는 문제가 있었음. 텍스트 완전일치가 item_key 보다 항상 강한 근거.
+function buildItemKeyMap(items) {
+  const m = new Map();
+  for (const it of items) {
+    const k = it?.attrs?.item_key;
+    if (!k) continue;
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(it);
+  }
+  return m;
+}
+
+function extractItemKeysFromNote(note) {
+  if (!note) return [];
+  const src = String(note);
+  const keys = new Set();
+  let m;
+  const reEn = /item[_\s-]*(\d+)/gi;
+  while ((m = reEn.exec(src)) !== null) keys.add(`item_${m[1]}`);
+  const reKo = /아이템\s*(\d+)/g;
+  while ((m = reKo.exec(src)) !== null) keys.add(`item_${m[1]}`);
+  return [...keys];
+}
+
+function buildGraphSimilarityMap(items3, items4) {
+  const set3 = new Set(items3.map(it => it.id));
+  const set4 = new Set(items4.map(it => it.id));
+  const out = new Map(); // `${item3Id}|${item4Id}` -> score_hybrid
+  const simEdges = (state && state.edges && state.edges.SIMILAR_TO) ? state.edges.SIMILAR_TO : [];
+  for (const e of simEdges) {
+    const kind = e?.attrs?.kind_pair;
+    if (kind && kind !== "Item-Item") continue;
+    let leftId = null;
+    let rightId = null;
+    if (set3.has(e.source) && set4.has(e.target)) {
+      leftId = e.source;
+      rightId = e.target;
+    } else if (set3.has(e.target) && set4.has(e.source)) {
+      leftId = e.target;
+      rightId = e.source;
+    } else {
+      continue;
+    }
+    const score = Number(e?.attrs?.score_hybrid);
+    if (!Number.isFinite(score)) continue;
+    const k = `${leftId}|${rightId}`;
+    const prev = out.get(k);
+    if (prev == null || score > prev) out.set(k, score);
+  }
+  return out;
+}
+
+/** 3주기 items ↔ 4주기 items 매칭 (1단계)
+ *   Pass 1: subfield 그룹 내 normalizeForMatch 완전일치
+ *   Pass 2: (subfield + item_key) 동일 + 최소 유사도 조건
+ *   Pass 3: subfield 그룹 내 hybrid 유사도(>= threshold)
+ *   Pass 4: SIMILAR_TO(Item-Item) 점수 기반 앵커 매칭
+ *   Pass 5: 삭제/신설 과잉 방지를 위한 유사 후보 fallback (>= candidateThreshold)
+ *   Pass 6: 1:N / N:1 다중 매칭 (코멘트 기반 + 의미 기반 보조)
  */
 function alignItemsByKey(items3, items4, opts) {
   const threshold = (opts && opts.threshold != null) ? opts.threshold : 0.85;
+  const minKeySimilarity = Math.max(0.40, threshold - 0.35);
+  // 기본 슬라이더(0.85)에서 공익제보 같은 '유사+확장' 케이스(≈0.57)를 잡기 위한 보수적 하한
+  const candidateThreshold = Math.max(0.52, threshold - 0.30);
+  // 문장 통합/분리 케이스(개요 content 등)에서 텍스트 자카드가 낮아도 그래프 유사도가 높으면 앵커로 인정
+  const graphAnchorThreshold = Math.max(0.78, threshold - 0.07);
+  const multiSemanticThreshold = Math.max(0.42, threshold - 0.43);
+  const multiGraphThreshold = Math.max(0.62, threshold - 0.23);
+  const multiNoteThreshold = Math.max(0.40, threshold - 0.45);
+  const graphSimMap = buildGraphSimilarityMap(items3, items4);
 
   const used3 = new Set();
   const used4 = new Set();
@@ -1171,12 +1406,14 @@ function alignItemsByKey(items3, items4, opts) {
   // ---- PASS 1: subfield 그룹 내 정규화 완전일치 (최우선) ----
   const norm3Map = new Map(); // (subfield||norm) → [items3]
   for (const it of items3) {
+    if (used3.has(it)) continue;
     const norm = (it.attrs.subfield || "") + "||" + normalizeForMatch(it.attrs.text || "");
     if (!normalizeForMatch(it.attrs.text || "")) continue;
     if (!norm3Map.has(norm)) norm3Map.set(norm, []);
     norm3Map.get(norm).push(it);
   }
   for (const it of items4) {
+    if (used4.has(it)) continue;
     const norm = (it.attrs.subfield || "") + "||" + normalizeForMatch(it.attrs.text || "");
     if (!normalizeForMatch(it.attrs.text || "")) continue;
     const arr = norm3Map.get(norm);
@@ -1203,21 +1440,37 @@ function alignItemsByKey(items3, items4, opts) {
     const k = keyOf(it);
     const arr = key3Map.get(k);
     if (arr && arr.length > 0) {
-      const first = arr.shift();
+      // key 동일이라도 텍스트가 크게 다르면 오탐 가능성이 있어 방어적으로 거른다.
+      const filtered = arr.filter(left => hybridItemSimilarity(left.attrs.text || "", it.attrs.text || "") >= minKeySimilarity);
+      if (!filtered.length) continue;
+      filtered.sort((a, b) =>
+        hybridItemSimilarity(b.attrs.text || "", it.attrs.text || "") -
+        hybridItemSimilarity(a.attrs.text || "", it.attrs.text || "")
+      );
+      const first = filtered[0];
+      const idx = arr.indexOf(first);
+      if (idx >= 0) arr.splice(idx, 1);
       used3.add(first);
       used4.add(it);
-      pairs.push({ left: first, right: it, match_source: 'key', match_score: 1.0 });
+      pairs.push({
+        left: first,
+        right: it,
+        match_source: "key",
+        match_score: hybridItemSimilarity(first.attrs.text || "", it.attrs.text || ""),
+      });
     }
   }
 
-  // ---- PASS 3: subfield 그룹 내 Jaccard ≥ threshold — greedy (점수 내림차순) ----
+  // ---- PASS 3: subfield 그룹 내 hybrid 유사도 ≥ threshold — greedy (점수 내림차순) ----
   const left3 = items3.filter(i => !used3.has(i));
   const right4 = items4.filter(i => !used4.has(i));
   const candidates = [];
   for (const l of left3) {
     for (const r of right4) {
-      if ((l.attrs.subfield || "") !== (r.attrs.subfield || "")) continue;
-      const score = jaccard2gram(l.attrs.text || "", r.attrs.text || "");
+      if ((l.attrs.subfield || "") && (r.attrs.subfield || "") && (l.attrs.subfield !== r.attrs.subfield)) continue;
+      let score = hybridItemSimilarity(l.attrs.text || "", r.attrs.text || "");
+      if ((l.attrs.item_key || "") === (r.attrs.item_key || "") && l.attrs.item_key) score += 0.04;
+      score = Math.min(1, score);
       if (score >= threshold) candidates.push({ l, r, score });
     }
   }
@@ -1229,21 +1482,184 @@ function alignItemsByKey(items3, items4, opts) {
     pairs.push({ left: c.l, right: c.r, match_source: 'text_fuzzy', match_score: c.score });
   }
 
-  // ---- 최종 rows 조립: 4주기 items 순서 기준 ----
-  const pairsByRight = new Map();
-  const pairsByLeft = new Map();
-  for (const p of pairs) {
-    if (p.right) pairsByRight.set(p.right, p);
-    if (p.left) pairsByLeft.set(p.left, p);
+  // ---- PASS 4: SIMILAR_TO(Item-Item) 점수 기반 앵커 매칭 ----
+  const graphLeftRemain = items3.filter(i => !used3.has(i));
+  const graphRightRemain = items4.filter(i => !used4.has(i));
+  const graphCandidates = [];
+  for (const l of graphLeftRemain) {
+    for (const r of graphRightRemain) {
+      if ((l.attrs.subfield || "") && (r.attrs.subfield || "") && (l.attrs.subfield !== r.attrs.subfield)) continue;
+      const score = graphSimMap.get(`${l.id}|${r.id}`);
+      if (score != null && score >= graphAnchorThreshold) {
+        graphCandidates.push({ l, r, score });
+      }
+    }
   }
+  graphCandidates.sort((a, b) => b.score - a.score);
+  for (const c of graphCandidates) {
+    if (used3.has(c.l) || used4.has(c.r)) continue;
+    used3.add(c.l);
+    used4.add(c.r);
+    pairs.push({ left: c.l, right: c.r, match_source: "graph_sim", match_score: c.score });
+  }
+
+  // ---- PASS 5 (1단계 핵심): 삭제/신설 과잉 분류 방지용 유사 후보 fallback ----
+  const leftRemain = items3.filter(i => !used3.has(i));
+  const rightRemain = items4.filter(i => !used4.has(i));
+  const fallbackCandidates = [];
+  for (const l of leftRemain) {
+    for (const r of rightRemain) {
+      if ((l.attrs.subfield || "") && (r.attrs.subfield || "") && (l.attrs.subfield !== r.attrs.subfield)) continue;
+      const score = hybridItemSimilarity(l.attrs.text || "", r.attrs.text || "");
+      if (score >= candidateThreshold) {
+        fallbackCandidates.push({ l, r, score });
+      }
+    }
+  }
+  fallbackCandidates.sort((a, b) => b.score - a.score);
+  for (const c of fallbackCandidates) {
+    if (used3.has(c.l) || used4.has(c.r)) continue;
+    used3.add(c.l);
+    used4.add(c.r);
+    pairs.push({ left: c.l, right: c.r, match_source: "candidate", match_score: c.score });
+  }
+
+  // ---- PASS 6: 다중 매칭(1:N / N:1) ----
+  // 5-A) mapping_note 의 item 참조 기반 보조 연결
+  const items3ByKey = buildItemKeyMap(items3);
+  const items4ByKey = buildItemKeyMap(items4);
+  const pairKey = p => `${p.left?.id || ""}|${p.right?.id || ""}`;
+  const basePairSet = new Set(pairs.filter(p => p.left && p.right).map(pairKey));
+  const multiPairSet = new Set();
+  const multiPairs = [];
+
+  const addMultiPair = (left, right, source, score) => {
+    if (!left || !right) return;
+    const key = `${left.id}|${right.id}`;
+    if (basePairSet.has(key) || multiPairSet.has(key)) return;
+    multiPairSet.add(key);
+    multiPairs.push({
+      left,
+      right,
+      match_source: source,
+      match_score: Math.min(1, Math.max(0, score)),
+      match_scope: "multi",
+    });
+  };
+
+  for (const left of items3) {
+    const note = String(left?.attrs?.mapping_note || "");
+    if (!/4\s*주기/.test(note)) continue;
+    for (const key of extractItemKeysFromNote(note)) {
+      for (const right of items4ByKey.get(key) || []) {
+        const s = hybridItemSimilarity(left.attrs.text || "", right.attrs.text || "");
+        if (s < multiNoteThreshold) continue;
+        addMultiPair(left, right, "multi_note", s);
+      }
+    }
+  }
+  for (const right of items4) {
+    const note = String(right?.attrs?.mapping_note || "");
+    if (!/3\s*주기/.test(note)) continue;
+    for (const key of extractItemKeysFromNote(note)) {
+      for (const left of items3ByKey.get(key) || []) {
+        const s = hybridItemSimilarity(left.attrs.text || "", right.attrs.text || "");
+        if (s < multiNoteThreshold) continue;
+        addMultiPair(left, right, "multi_note", s);
+      }
+    }
+  }
+
+  // 5-B) 의미 기반 보조 연결 (기본 매칭된 항목에 추가로 연결)
+  // N:1 (3주기 여러 항목 -> 4주기 1항목)
+  for (const left of items3) {
+    if (used3.has(left)) continue;
+    const candidates = [];
+    for (const right of items4) {
+      if (!used4.has(right)) continue; // 이미 1:1로 앵커된 4주기 항목으로만 확장
+      if ((left.attrs.subfield || "") && (right.attrs.subfield || "") && (left.attrs.subfield !== right.attrs.subfield)) continue;
+      const textScore = hybridItemSimilarity(left.attrs.text || "", right.attrs.text || "");
+      const graphScore = graphSimMap.get(`${left.id}|${right.id}`) || 0;
+      const graphPass = graphScore >= multiGraphThreshold;
+      const textPass = textScore >= multiSemanticThreshold;
+      if (!graphPass && !textPass) continue;
+      if (graphPass && (!textPass || graphScore >= textScore)) {
+        candidates.push({ right, score: graphScore, source: "multi_graph" });
+      } else {
+        candidates.push({ right, score: textScore, source: "multi_semantic" });
+      }
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    if (candidates.length) addMultiPair(left, candidates[0].right, candidates[0].source, candidates[0].score);
+  }
+  // 1:N (3주기 1항목 -> 4주기 여러 항목)
+  for (const right of items4) {
+    if (used4.has(right)) continue;
+    const candidates = [];
+    for (const left of items3) {
+      if (!used3.has(left)) continue; // 이미 1:1로 앵커된 3주기 항목으로만 확장
+      if ((left.attrs.subfield || "") && (right.attrs.subfield || "") && (left.attrs.subfield !== right.attrs.subfield)) continue;
+      const textScore = hybridItemSimilarity(left.attrs.text || "", right.attrs.text || "");
+      const graphScore = graphSimMap.get(`${left.id}|${right.id}`) || 0;
+      const graphPass = graphScore >= multiGraphThreshold;
+      const textPass = textScore >= multiSemanticThreshold;
+      if (!graphPass && !textPass) continue;
+      if (graphPass && (!textPass || graphScore >= textScore)) {
+        candidates.push({ left, score: graphScore, source: "multi_graph" });
+      } else {
+        candidates.push({ left, score: textScore, source: "multi_semantic" });
+      }
+    }
+    candidates.sort((a, b) => b.score - a.score);
+    if (candidates.length) addMultiPair(candidates[0].left, right, candidates[0].source, candidates[0].score);
+  }
+
+  // ---- 최종 rows 조립: 4주기 item 순서 기준 (다중 매칭 포함) ----
+  const allPairs = [
+    ...pairs.map(p => ({ ...p, match_scope: "primary" })),
+    ...multiPairs,
+  ];
+  const sourceOrder = {
+    text_exact: 1,
+    key: 2,
+    text_fuzzy: 3,
+    graph_sim: 4,
+    candidate: 5,
+    multi_note: 6,
+    multi_graph: 7,
+    multi_semantic: 8,
+  };
+  const pairsByRight = new Map();
+  for (const p of allPairs) {
+    if (!p.right) continue;
+    const key = p.right.id;
+    if (!pairsByRight.has(key)) pairsByRight.set(key, []);
+    pairsByRight.get(key).push(p);
+  }
+
+  for (const [rid, arr] of pairsByRight.entries()) {
+    arr.sort((a, b) => {
+      const pa = sourceOrder[a.match_source] || 99;
+      const pb = sourceOrder[b.match_source] || 99;
+      if (pa !== pb) return pa - pb;
+      return (b.match_score || 0) - (a.match_score || 0);
+    });
+  }
+
   const rows = [];
+  const coveredLeft = new Set();
   for (const r of items4) {
-    const p = pairsByRight.get(r);
-    if (p) {
-      rows.push({
-        left: p.left, right: r,
-        subfield: r.attrs.subfield || null,
-        match_source: p.match_source, match_score: p.match_score,
+    const ps = pairsByRight.get(r.id) || [];
+    if (ps.length) {
+      ps.forEach((p, idx) => {
+        if (p.left) coveredLeft.add(p.left.id);
+        rows.push({
+          left: p.left, right: r,
+          subfield: r.attrs.subfield || null,
+          match_source: p.match_source, match_score: p.match_score,
+          match_scope: p.match_scope || "primary",
+          right_duplicate: idx > 0,
+        });
       });
     } else {
       rows.push({
@@ -1255,7 +1671,7 @@ function alignItemsByKey(items3, items4, opts) {
   }
   // 매칭 못 찾은 3주기 items 는 뒤에 단독 행
   for (const l of items3) {
-    if (used3.has(l)) continue;
+    if (coveredLeft.has(l.id)) continue;
     rows.push({
       left: l, right: null,
       subfield: l.attrs.subfield || null,
@@ -1279,11 +1695,46 @@ function matchTagHtml(source, score) {
   if (source === 'text_exact') {
     return `<span class="match-tag m-exact" title="정규화 후 텍스트 완전일치 (공백·부호 제거)">≈ exact</span>`;
   }
+  if (source === 'graph_sim') {
+    const s = (score || 0).toFixed(2);
+    return `<span class="match-tag m-fuzzy" title="SIMILAR_TO(Item-Item) 기반 앵커 매칭 (score_hybrid ${s})">🔗 ${s}</span>`;
+  }
+  if (source === 'multi_note') {
+    const s = (score || 0).toFixed(2);
+    return `<span class="match-tag m-fuzzy" title="Claude 1차 분석 코멘트(mapping_note)를 보조 힌트로 사용한 다중 매칭 (텍스트 유사도 ${s})">📝 N:M</span>`;
+  }
+  if (source === 'multi_graph') {
+    const s = (score || 0).toFixed(2);
+    return `<span class="match-tag m-fuzzy" title="SIMILAR_TO(Item-Item) 기반 다중 매칭 (score_hybrid ${s})">🔗 N:M ${s}</span>`;
+  }
+  if (source === 'multi_semantic') {
+    const s = (score || 0).toFixed(2);
+    return `<span class="match-tag m-fuzzy" title="의미 유사도 기반 다중 매칭 (유사도 ${s})">≈ N:M ${s}</span>`;
+  }
+  if (source === 'candidate') {
+    const s = (score || 0).toFixed(2);
+    return `<span class="match-tag m-fuzzy" title="삭제/신설 과잉 방지용 유사 후보 매칭 (유사도 ${s})">≈ cand ${s}</span>`;
+  }
   if (source === 'text_fuzzy') {
     const s = (score || 0).toFixed(2);
-    return `<span class="match-tag m-fuzzy" title="2-gram Jaccard 유사도 ${s} — 텍스트 근사 매칭, 검토 권장">≈ ${s}</span>`;
+    return `<span class="match-tag m-fuzzy" title="hybrid 유사도 ${s} — 텍스트 근사 매칭, 검토 권장">≈ ${s}</span>`;
   }
   return "";
+}
+
+function classifyMatchedRow(leftText, rightText, matchSource, matchScore, threshold) {
+  const n1 = normalizeForMatch(leftText || "");
+  const n2 = normalizeForMatch(rightText || "");
+  if (n1 && n2 && n1 === n2) return "same";
+  const sim = Math.max(matchScore || 0, hybridItemSimilarity(leftText || "", rightText || ""));
+  if (matchSource === "graph_sim" && sim >= Math.max(0.78, threshold - 0.07)) return "similar";
+  if (matchSource === "multi_note" && sim >= Math.max(0.40, threshold - 0.45)) return "similar";
+  if (matchSource === "multi_graph" && sim >= Math.max(0.62, threshold - 0.23)) return "similar";
+  if (matchSource === "multi_semantic" && sim >= Math.max(0.42, threshold - 0.43)) return "similar";
+  if (matchSource === "candidate" && sim >= Math.max(0.52, threshold - 0.30)) return "similar";
+  if (sim >= Math.max(0.92, threshold + 0.05)) return "same";
+  if (sim >= threshold) return "similar";
+  return "modified";
 }
 
 /** 대비표 단일 테이블(하나의 4주기 준거 vs 여러 3주기) */
@@ -1317,16 +1768,26 @@ function renderCompareTable(group) {
   const rows = alignItemsByKey(items3, items4, { threshold: state.ui.itemMatchThr });
 
   // 매칭 요약 통계
-  const stat = { key: 0, text_exact: 0, text_fuzzy: 0, none: 0 };
-  for (const r of rows) {
-    if (r.left && r.right) stat[r.match_source || 'key']++;
-    else stat.none++;
-  }
+  const stat = {
+    candidate: 0,
+    graph_sim: 0,
+    multi_note: 0,
+    multi_graph: 0,
+    multi_semantic: 0,
+    key: 0,
+    text_exact: 0,
+    text_fuzzy: 0,
+    same: 0,
+    similar: 0,
+    modified: 0,
+    added: 0,
+    removed: 0,
+  };
 
   // item 행 HTML
   let rowsHtml = rows.map(r => {
-    let leftText = r.left ? r.left.attrs.text : "";
-    let rightText = r.right ? r.right.attrs.text : "";
+    const leftText = r.left ? r.left.attrs.text : "";
+    const rightText = r.right ? r.right.attrs.text : "";
     const ops = diffWords(leftText, rightText);
     const subTag = r.subfield ? `<span class="subfield-tag">${escapeHtml(r.subfield)}</span>` : "";
     const leftKeyTag = r.left?.attrs.item_key ? `<span class="ikey">${escapeHtml(r.left.attrs.item_key)}</span>` : "";
@@ -1334,25 +1795,36 @@ function renderCompareTable(group) {
     let cls = "row-kept";
     let leftCell, rightCell;
     if (!r.left && r.right) {
+      stat.added++;
       cls = "row-modified";
       leftCell = `<td class="cell-new">(신설)</td>`;
-      rightCell = `<td>${subTag}${rightKeyTag}${renderRightCellHtml(ops)}${r.right.attrs.mapping_note ? `<div class="mt-1 text-[11px] text-amber-700">📝 ${escapeHtml(r.right.attrs.mapping_note)}</div>`:""}</td>`;
+      rightCell = `<td>${subTag}${rightKeyTag}${renderRightCellHtml(ops)}${r.right.attrs.mapping_note ? `<div class="mt-1 text-[11px] text-amber-700" title="Claude 1차 분석 코멘트: 편람 원문 사실과 별도 검토 필요">📝 분석 코멘트: ${escapeHtml(r.right.attrs.mapping_note)}</div>`:""}</td>`;
     } else if (r.left && !r.right) {
+      stat.removed++;
       cls = "row-modified";
-      leftCell = `<td>${subTag}${leftKeyTag}${renderLeftCellHtml(ops)}${r.left.attrs.mapping_note ? `<div class="mt-1 text-[11px] text-amber-700">📝 ${escapeHtml(r.left.attrs.mapping_note)}</div>`:""}</td>`;
+      leftCell = `<td>${subTag}${leftKeyTag}${renderLeftCellHtml(ops)}${r.left.attrs.mapping_note ? `<div class="mt-1 text-[11px] text-amber-700" title="Claude 1차 분석 코멘트: 편람 원문 사실과 별도 검토 필요">📝 분석 코멘트: ${escapeHtml(r.left.attrs.mapping_note)}</div>`:""}</td>`;
       rightCell = `<td class="cell-del">(삭제됨)</td>`;
     } else {
-      // 양쪽 모두 매칭됨 — match_source 에 따라 태그 표시 + row 클래스 조정
-      const changed = ops.some(o => o.op !== 'eq');
-      if (r.match_source === 'text_fuzzy') {
-        cls = "row-fuzzy";
+      // 양쪽 모두 매칭됨 — 근거 source + 최종 상태 분류
+      if (r.match_source && stat[r.match_source] != null) stat[r.match_source]++;
+      const rowState = classifyMatchedRow(leftText, rightText, r.match_source, r.match_score, state.ui.itemMatchThr);
+      if (rowState === "same") {
+        stat.same++;
+        cls = "row-same";
+      } else if (rowState === "similar") {
+        stat.similar++;
+        cls = "row-similar";
       } else {
-        cls = changed ? "row-modified" : "row-kept";
+        stat.modified++;
+        cls = "row-modified";
       }
       const tag = matchTagHtml(r.match_source, r.match_score);
+      const multiHint = r.match_scope === "multi"
+        ? `<span class="text-[10px] text-amber-600 ml-1" title="통합/분할 맥락의 다중 매칭">↔ 다중</span>`
+        : "";
       leftCell  = `<td>${tag}${subTag}${leftKeyTag}${renderLeftCellHtml(ops)}</td>`;
       const note = r.right.attrs.mapping_note || r.left.attrs.mapping_note || "";
-      rightCell = `<td>${subTag}${rightKeyTag}${renderRightCellHtml(ops)}${note ? `<div class="mt-1 text-[11px] text-amber-700">📝 ${escapeHtml(note)}</div>`:""}</td>`;
+      rightCell = `<td>${subTag}${rightKeyTag}${multiHint}${renderRightCellHtml(ops)}${note ? `<div class="mt-1 text-[11px] text-amber-700" title="Claude 1차 분석 코멘트: 편람 원문 사실과 별도 검토 필요">📝 분석 코멘트: ${escapeHtml(note)}</div>`:""}</td>`;
     }
     return `<tr class="${cls}">${leftCell}${rightCell}</tr>`;
   }).join("");
@@ -1363,7 +1835,7 @@ function renderCompareTable(group) {
     <tr class="row-meta">
       <td colspan="2">
         ${mappingBadgeHtml(mapping_type)}
-        ${mapping_note ? `<span class="ml-2">📝 ${escapeHtml(mapping_note)}</span>` : ""}
+        ${mapping_note ? `<span class="ml-2" title="Claude 1차 분석 코멘트: 편람 원문 사실과 별도 검토 필요">📝 분석 코멘트: ${escapeHtml(mapping_note)}</span>` : ""}
       </td>
     </tr>` : "";
 
@@ -1373,14 +1845,24 @@ function renderCompareTable(group) {
       🔗 <b>통합(N:1)</b> — 3주기 ${sources3.map(s => s.attrs.criterion).join(" + ")} 이(가) 4주기 ${crit4.attrs.criterion} 로 통합됨
     </div>` : "";
 
-  // 매칭 통계 배너 (key/exact/fuzzy/unmatched)
+  // 매칭 통계 배너 (매칭 근거 + 최종 상태)
   const matchStatHtml = `
     <div class="text-[11px] text-gray-600 mb-1 flex flex-wrap gap-2 items-center">
       <span class="font-semibold">item 매칭:</span>
       <span class="match-tag m-key" title="item_key 동일 매칭">🔑 ${stat.key}</span>
       <span class="match-tag m-exact" title="정규화 텍스트 완전일치">≈ exact ${stat.text_exact}</span>
-      <span class="match-tag m-fuzzy" title="2-gram Jaccard ≥ ${state.ui.itemMatchThr.toFixed(2)} 근사 매칭">≈ fuzzy ${stat.text_fuzzy}</span>
-      <span class="text-gray-400">· 미매칭 ${stat.none}</span>
+      <span class="match-tag m-fuzzy" title="hybrid 유사도 ≥ ${state.ui.itemMatchThr.toFixed(2)} 근사 매칭">≈ fuzzy ${stat.text_fuzzy}</span>
+      <span class="match-tag m-fuzzy" title="SIMILAR_TO(Item-Item) 기반 앵커 매칭">🔗 ${stat.graph_sim}</span>
+      <span class="match-tag m-fuzzy" title="삭제/신설 과잉 분류 방지용 후보 매칭">≈ cand ${stat.candidate}</span>
+      <span class="match-tag m-fuzzy" title="Claude 1차 분석 코멘트를 보조 힌트로 사용한 다중 매칭">📝 N:M ${stat.multi_note}</span>
+      <span class="match-tag m-fuzzy" title="SIMILAR_TO(Item-Item) 기반 다중 매칭">🔗 N:M ${stat.multi_graph}</span>
+      <span class="match-tag m-fuzzy" title="의미 기반 다중 매칭">≈ N:M ${stat.multi_semantic}</span>
+      <span class="text-gray-300">|</span>
+      <span class="text-slate-700">동일 ${stat.same}</span>
+      <span class="text-amber-700">유사 ${stat.similar}</span>
+      <span class="text-blue-700">변경 ${stat.modified}</span>
+      <span class="text-emerald-700">신설 ${stat.added}</span>
+      <span class="text-rose-700">삭제 ${stat.removed}</span>
       <span class="ml-auto text-gray-400 text-[10px]">임계값 조정은 상단 'item 매칭 ≥' 슬라이더</span>
     </div>`;
 
@@ -1487,6 +1969,800 @@ function selectCompareCrit(cid) {
   renderCompareBody();
 }
 
+function verifySubfieldLabel(item) {
+  const raw = String(item?.attrs?.subfield || "").trim();
+  return raw || "전체";
+}
+
+function sortVerifySubfields(keys) {
+  const order = {
+    "전체": 0,
+    "정보공시": 1,
+    "제출자료_관련규정": 2,
+    "제출자료_첨부": 3,
+    "현지확인자료": 4,
+    "현지면담": 5,
+  };
+  return [...new Set(keys)].sort((a, b) => {
+    const oa = (order[a] != null) ? order[a] : 99;
+    const ob = (order[b] != null) ? order[b] : 99;
+    if (oa !== ob) return oa - ob;
+    return a.localeCompare(b, "ko");
+  });
+}
+
+const VERIFY_UNMATCHED_SCORE = 0.18;
+const VERIFY_MULTI_SCORE = 0.35;
+
+function collectVerifyIntentTags(text) {
+  const s = String(text || "").replace(/\s+/g, "");
+  const tags = new Set();
+  const allTags = ["수립", "추진", "평가", "환류", "개선", "공개", "연계", "체계", "현황", "실적", "방법", "내용", "범위"];
+  for (const t of allTags) {
+    if (s.includes(t)) tags.add(t);
+  }
+  return tags;
+}
+
+function verifyIntentMeta(aText, bText) {
+  const strongTags = ["수립", "추진", "평가", "환류", "개선", "공개", "연계", "체계"];
+  const A = collectVerifyIntentTags(aText);
+  const B = collectVerifyIntentTags(bText);
+  let inter = 0;
+  for (const t of A) if (B.has(t)) inter++;
+  const union = A.size + B.size - inter;
+  const jacc = union > 0 ? inter / union : 0;
+
+  const strongA = strongTags.filter(t => A.has(t));
+  const strongB = strongTags.filter(t => B.has(t));
+  const strongShared = strongA.filter(t => B.has(t)).length;
+  const strongConflict = (strongA.length > 0 && strongB.length > 0 && strongShared === 0);
+  return { jacc, inter, strongShared, strongConflict };
+}
+
+function verifyCandidateSource(c) {
+  if (c.noteHit && (c.graph >= 0.72 || c.hybrid >= 0.42)) return "verify_supported_note";
+  if (c.graph >= c.hybrid && c.graph > 0) return "verify_graph";
+  if (c.noteHit) return "verify_note_hint";
+  return "verify_hybrid";
+}
+
+function verifySourceLabel(source, score) {
+  const s = score ? ` ${Number(score).toFixed(3)}` : "";
+  if (source === "verify_supported_note") return `분석 코멘트+의미/그래프 보조${s}`;
+  if (source === "verify_note_hint") return `분석 코멘트 힌트만${s}`;
+  if (source === "verify_graph") return `SIMILAR_TO${s}`;
+  if (source === "verify_hybrid") return `텍스트 유사도${s}`;
+  if (source === "none") return "미매칭";
+  return `${source || ""}${s}`;
+}
+
+function buildVerifyCandidate(left, right, graphMap) {
+  const note = String(left?.attrs?.mapping_note || "");
+  const noteKeys = new Set(extractItemKeysFromNote(note));
+  const hybrid = hybridItemSimilarity(left.attrs.text || "", right.attrs.text || "");
+  const graph = graphMap.get(`${left.id}|${right.id}`) || 0;
+  const im = verifyIntentMeta(left.attrs.text || "", right.attrs.text || "");
+  const sameKey = (left.attrs.item_key || "") && (left.attrs.item_key === right.attrs.item_key);
+  const noteHit = noteKeys.has(right.attrs.item_key || "");
+
+  let score =
+    0.50 * hybrid +
+    0.32 * graph +
+    0.18 * im.jacc +
+    (sameKey ? 0.04 : 0) +
+    (noteHit ? 0.08 : 0);
+  // 긴 content 문장은 여러 clause가 합쳐져 있어 의도 태그가 달라도 실제 충돌이 아닐 수 있다.
+  // graph와 lexical overlap이 같이 받쳐주는 경우에는 strongConflict 감점을 적용하지 않는다.
+  if (im.strongConflict && !(graph >= 0.80 && hybrid >= 0.30)) score -= 0.18;
+  score = Math.max(0, Math.min(1, score));
+
+  return {
+    right,
+    score,
+    hybrid,
+    graph,
+    noteHit,
+    sameKey: !!sameKey,
+    strongShared: im.strongShared,
+    strongConflict: im.strongConflict,
+    intentInter: im.inter,
+    source: null,
+  };
+}
+
+function sortVerifyCandidates(candidates) {
+  candidates.sort((a, b) => {
+    if (a.score !== b.score) return b.score - a.score;
+    if (a.graph !== b.graph) return b.graph - a.graph;
+    if (a.hybrid !== b.hybrid) return b.hybrid - a.hybrid;
+    if (a.strongConflict !== b.strongConflict) return a.strongConflict ? 1 : -1;
+    if (a.strongShared !== b.strongShared) return b.strongShared - a.strongShared;
+    if (a.intentInter !== b.intentInter) return b.intentInter - a.intentInter;
+    if (a.noteHit !== b.noteHit) return a.noteHit ? -1 : 1;
+    return compareItemKey(a.right.attrs.item_key || "", b.right.attrs.item_key || "");
+  });
+  return candidates;
+}
+
+function hungarianMinimize(cost) {
+  const n = cost.length;
+  const m = cost[0] ? cost[0].length : 0;
+  const u = new Array(n + 1).fill(0);
+  const v = new Array(m + 1).fill(0);
+  const p = new Array(m + 1).fill(0);
+  const way = new Array(m + 1).fill(0);
+
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Array(m + 1).fill(Infinity);
+    const used = new Array(m + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = p[j0];
+      let delta = Infinity;
+      let j1 = 0;
+      for (let j = 1; j <= m; j++) {
+        if (used[j]) continue;
+        const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+        if (cur < minv[j]) {
+          minv[j] = cur;
+          way[j] = j0;
+        }
+        if (minv[j] < delta) {
+          delta = minv[j];
+          j1 = j;
+        }
+      }
+      for (let j = 0; j <= m; j++) {
+        if (used[j]) {
+          u[p[j]] += delta;
+          v[j] -= delta;
+        } else {
+          minv[j] -= delta;
+        }
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+
+    do {
+      const j1 = way[j0];
+      p[j0] = p[j1];
+      j0 = j1;
+    } while (j0 !== 0);
+  }
+
+  const assignment = new Array(n).fill(-1);
+  for (let j = 1; j <= m; j++) {
+    if (p[j] > 0) assignment[p[j] - 1] = j - 1;
+  }
+  return assignment;
+}
+
+function maximizeVerifyAssignment(scoreRows, unmatchedScore) {
+  const n = scoreRows.length;
+  if (!n) return [];
+  const realCols = scoreRows[0] ? scoreRows[0].length : 0;
+  let maxScore = unmatchedScore;
+  for (const row of scoreRows) {
+    for (const s of row) maxScore = Math.max(maxScore, s);
+  }
+  const cost = scoreRows.map(row => {
+    const real = row.map(s => maxScore - s);
+    const dummy = new Array(n).fill(maxScore - unmatchedScore);
+    return real.concat(dummy);
+  });
+  return hungarianMinimize(cost);
+}
+
+function buildVerifyAlignmentMap(entries3, entries4) {
+  const map = new Map(); // left(item3.id) -> { rightId, rightKey, rightOrder, source, score }
+  if (!entries3.length || !entries4.length) return map;
+  const items3 = entries3.map(e => e.item); // cycle 3
+  const items4 = entries4.map(e => e.item); // cycle 4
+
+  const orderByRightId = new Map();
+  const sorted4 = [...items4].sort((a, b) => compareItemKey(a.attrs.item_key || "", b.attrs.item_key || ""));
+  sorted4.forEach((it, idx) => orderByRightId.set(it.id, idx));
+  const graphMap = buildGraphSimilarityMap(items3, items4);
+
+  const leftBySub = new Map();
+  const rightBySub = new Map();
+  for (const e of entries3) {
+    const k = verifySubfieldLabel(e.item);
+    if (!leftBySub.has(k)) leftBySub.set(k, []);
+    leftBySub.get(k).push(e);
+  }
+  for (const it of items4) {
+    const k = verifySubfieldLabel(it);
+    if (!rightBySub.has(k)) rightBySub.set(k, []);
+    rightBySub.get(k).push(it);
+  }
+
+  const debugRows = [];
+  const subfields = sortVerifySubfields([...leftBySub.keys(), ...rightBySub.keys()]);
+  for (const k of subfields) {
+    const leftEntries = [...(leftBySub.get(k) || [])].sort((a, b) => {
+      const ca = String(a.sourceCriterion || "");
+      const cb = String(b.sourceCriterion || "");
+      const ccmp = compareCriterion(ca || "0", cb || "0");
+      if (ccmp !== 0) return ccmp;
+      return compareItemKey(a.item?.attrs?.item_key || "", b.item?.attrs?.item_key || "");
+    });
+    const rightItems = [...(rightBySub.get(k) || [])].sort((a, b) =>
+      compareItemKey(a.attrs.item_key || "", b.attrs.item_key || "")
+    );
+    if (!leftEntries.length || !rightItems.length) continue;
+
+    const candidateRows = [];
+    const scoreRows = [];
+    for (const e3 of leftEntries) {
+      const candidates = rightItems.map(right => {
+        const c = buildVerifyCandidate(e3.item, right, graphMap);
+        c.source = verifyCandidateSource(c);
+        return c;
+      });
+      candidateRows.push(sortVerifyCandidates(candidates));
+      scoreRows.push(rightItems.map(right => {
+        const c = candidates.find(x => x.right.id === right.id);
+        return c ? c.score : 0;
+      }));
+    }
+
+    const assignment = maximizeVerifyAssignment(scoreRows, VERIFY_UNMATCHED_SCORE);
+    for (let i = 0; i < leftEntries.length; i++) {
+      const e3 = leftEntries[i];
+      const col = assignment[i];
+      const assigned = (col >= 0 && col < rightItems.length)
+        ? candidateRows[i].find(c => c.right.id === rightItems[col].id)
+        : null;
+      if (assigned && assigned.score > VERIFY_UNMATCHED_SCORE) {
+        const rid = assigned.right.id;
+        map.set(e3.item.id, {
+          rightId: rid,
+          rightKey: assigned.right.attrs.item_key || "",
+          rightOrder: orderByRightId.has(rid) ? orderByRightId.get(rid) : 9999,
+          source: assigned.source,
+          score: Number(assigned.score || 0),
+          assignment: "global",
+        });
+      }
+    }
+
+    // 전역 1:1 앵커 뒤에, 강한 통합/분할 신호는 같은 4주기 item으로 붙여 라인 정렬을 유지한다.
+    for (let i = 0; i < leftEntries.length; i++) {
+      const e3 = leftEntries[i];
+      const best = candidateRows[i][0];
+      if (!best) continue;
+      const current = map.get(e3.item.id);
+      const currentScore = current ? current.score || 0 : 0;
+      const mergedSingleTarget = rightItems.length === 1 && leftEntries.length > 1;
+      const strongMulti =
+        (best.score >= VERIFY_MULTI_SCORE &&
+          (best.noteHit || best.graph >= 0.72 || best.hybrid >= 0.42)) ||
+        (mergedSingleTarget && best.score >= 0.40 && (best.graph >= 0.62 || best.hybrid >= 0.28));
+      const shouldPromote =
+        strongMulti &&
+        (!current || current.rightId !== best.right.id) &&
+        (currentScore < 0.55 || best.score >= currentScore + 0.18);
+      if (shouldPromote) {
+        const rid = best.right.id;
+        map.set(e3.item.id, {
+          rightId: rid,
+          rightKey: best.right.attrs.item_key || "",
+          rightOrder: orderByRightId.has(rid) ? orderByRightId.get(rid) : 9999,
+          source: best.source,
+          score: Number(best.score || 0),
+          assignment: "multi",
+        });
+      }
+    }
+
+    for (let i = 0; i < leftEntries.length; i++) {
+      const e3 = leftEntries[i];
+      const picked = map.get(e3.item.id);
+      debugRows.push({
+        subfield: k,
+        sourceCriterion: e3.sourceCriterion || "",
+        leftKey: e3.item.attrs.item_key || "",
+        leftText: e3.item.attrs.text || "",
+        pickedKey: picked ? picked.rightKey : "",
+        pickedScore: picked ? Number(picked.score || 0).toFixed(3) : "",
+        assignment: picked ? picked.assignment || "" : "unmatched",
+        candidates: candidateRows[i].map(c => ({
+          rightKey: c.right.attrs.item_key || "",
+          score: Number(c.score || 0).toFixed(3),
+          hybrid: Number(c.hybrid || 0).toFixed(3),
+          graph: Number(c.graph || 0).toFixed(3),
+          noteHit: c.noteHit,
+          strongConflict: c.strongConflict,
+          source: verifySourceLabel(c.source, c.score),
+          text: c.right.attrs.text || "",
+        })),
+      });
+    }
+  }
+  state.verifyDebugLast = debugRows;
+  return map;
+}
+
+function buildVerifyEntriesForGroup(group) {
+  const items4 = state.itemsByCrit.get(group.crit4.id) || [];
+  const entries4 = items4.map(item => ({ item }));
+  const entries3 = [];
+  for (const src of group.sources3) {
+    const items3 = state.itemsByCrit.get(src.id) || [];
+    for (const item of items3) {
+      entries3.push({
+        item,
+        sourceCriterion: src.attrs.criterion,
+        sourceTitle: src.attrs.title || "",
+      });
+    }
+  }
+  return { entries3, entries4, items4 };
+}
+
+function buildVerifyOwnerMap(partKey) {
+  if (state.verifyOwnerCache.has(partKey)) return state.verifyOwnerCache.get(partKey);
+  const owner = new Map(); // item3.id -> strongest 4-cycle criterion/item owner
+  const ids4 = state.critIds["4"][partKey] || [];
+
+  for (const cid of ids4) {
+    const crit4 = state.nodesById.get(cid);
+    if (!crit4) continue;
+    const group = buildCompareGroup(crit4);
+    if (!group.sources3.length) continue;
+
+    const { entries3, entries4 } = buildVerifyEntriesForGroup(group);
+    const align = buildVerifyAlignmentMap(entries3, entries4);
+    for (const e of entries3) {
+      const m = align.get(e.item.id);
+      if (!m || !m.rightId) continue;
+      const prev = owner.get(e.item.id);
+      const score = Number(m.score || 0);
+      if (
+        !prev ||
+        score > prev.score ||
+        (score === prev.score && compareCriterion(crit4.attrs.criterion, prev.criterion) < 0)
+      ) {
+        owner.set(e.item.id, {
+          crit4Id: crit4.id,
+          criterion: crit4.attrs.criterion,
+          title: crit4.attrs.title || "",
+          rightId: m.rightId,
+          rightKey: m.rightKey,
+          score,
+          source: m.source,
+        });
+      }
+    }
+  }
+
+  state.verifyOwnerCache.set(partKey, owner);
+  return owner;
+}
+
+function shouldSuppressVerifyDuplicate(entry, currentCrit4, ownerMap) {
+  const o = ownerMap.get(entry.item.id);
+  if (!o || o.crit4Id === currentCrit4.id) return false;
+  const currentScore = Number(entry.matchScore || 0);
+  const ownerScore = Number(o.score || 0);
+  if (ownerScore >= 0.92 && currentScore < 0.92) return true;
+  return ownerScore >= currentScore + 0.15 && currentScore < 0.72;
+}
+
+function buildVerifyAlignedRows(entries4, entries3, keys) {
+  const leftBySub = new Map();
+  const rightBySub = new Map();
+
+  for (const e of entries4) {
+    const k = verifySubfieldLabel(e.item);
+    if (!leftBySub.has(k)) leftBySub.set(k, []);
+    leftBySub.get(k).push(e);
+  }
+  for (const e of entries3) {
+    const k = verifySubfieldLabel(e.item);
+    if (!rightBySub.has(k)) rightBySub.set(k, []);
+    rightBySub.get(k).push(e);
+  }
+
+  const out = new Map(); // subfield -> [{left,right}]
+  for (const k of keys) {
+    const leftArr = [...(leftBySub.get(k) || [])].sort((a, b) =>
+      compareItemKey(a.item?.attrs?.item_key || "", b.item?.attrs?.item_key || "")
+    );
+    const rightArr = [...(rightBySub.get(k) || [])].sort((a, b) => {
+      const ao = (a.matchRightOrder != null) ? a.matchRightOrder : 9999;
+      const bo = (b.matchRightOrder != null) ? b.matchRightOrder : 9999;
+      if (ao !== bo) return ao - bo;
+      const ak = String(a.matchRightKey || "");
+      const bk = String(b.matchRightKey || "");
+      const kcmp = compareItemKey(ak, bk);
+      if (kcmp !== 0) return kcmp;
+      const ca = String(a.sourceCriterion || "");
+      const cb = String(b.sourceCriterion || "");
+      const ccmp = compareCriterion(ca || "0", cb || "0");
+      if (ccmp !== 0) return ccmp;
+      return compareItemKey(a.item?.attrs?.item_key || "", b.item?.attrs?.item_key || "");
+    });
+
+    const rows = [];
+    const bucketByRightId = new Map(); // right(item4.id) -> [entry3]
+    for (const e of rightArr) {
+      const rid = e.matchRightId || "";
+      if (!rid) continue;
+      if (!bucketByRightId.has(rid)) bucketByRightId.set(rid, []);
+      bucketByRightId.get(rid).push(e);
+    }
+
+    const usedRightEntry = new Set(); // item3.id
+    for (const l of leftArr) {
+      const attached = (bucketByRightId.get(l.item.id) || [])
+        .filter(x => !usedRightEntry.has(x.item.id))
+        .sort((a, b) => {
+          const sa = Number(a.matchScore || 0);
+          const sb = Number(b.matchScore || 0);
+          if (sa !== sb) return sb - sa;
+          const ca = String(a.sourceCriterion || "");
+          const cb = String(b.sourceCriterion || "");
+          const ccmp = compareCriterion(ca || "0", cb || "0");
+          if (ccmp !== 0) return ccmp;
+          return compareItemKey(a.item?.attrs?.item_key || "", b.item?.attrs?.item_key || "");
+        });
+      if (!attached.length) {
+        rows.push({ left: l, right: null });
+        continue;
+      }
+      rows.push({ left: l, right: attached[0] });
+      usedRightEntry.add(attached[0].item.id);
+      for (let i = 1; i < attached.length; i++) {
+        rows.push({ left: null, right: attached[i] }); // 1:N 보정용 빈칸
+        usedRightEntry.add(attached[i].item.id);
+      }
+    }
+
+    // 매칭되지 않았거나 다른 item으로만 연결된 3주기 항목 보강
+    for (const r of rightArr) {
+      if (usedRightEntry.has(r.item.id)) continue;
+      rows.push({ left: null, right: r });
+      usedRightEntry.add(r.item.id);
+    }
+
+    out.set(k, rows);
+  }
+  return out;
+}
+
+function renderVerifyLineCell(entry, opts) {
+  const side = (opts && opts.side) || "left";
+  if (!entry) return `<div class="verify-line-empty">.</div>`;
+  const scoreText = entry.matchScore ? ` · ${Number(entry.matchScore).toFixed(2)}` : "";
+  const matchTitle = entry.matchSource
+    ? `title="${escapeHtml(verifySourceLabel(entry.matchSource, entry.matchScore))}"`
+    : "";
+  return `
+    <span class="ikey">${escapeHtml(entry.item.attrs.item_key || "-")}</span>
+    ${side === "right" ? `<span class="verify-src-tag">3주기 ${escapeHtml(entry.sourceCriterion || "-")}</span>` : ""}
+    ${side === "right" ? `<span class="verify-match-tag" ${matchTitle}>↔ ${escapeHtml(entry.matchRightKey || "미매칭")}${scoreText}</span>` : ""}
+    ${escapeHtml(entry.item.attrs.text || "")}
+  `;
+}
+
+function renderVerifyAlignedSubfields(keys, alignedRowsBySubfield) {
+  const sections = [];
+  for (const k of keys) {
+    const rows = alignedRowsBySubfield.get(k) || [];
+    const leftCount = rows.filter(r => !!r.left).length;
+    const rightCount = rows.filter(r => !!r.right).length;
+    const tableRows = rows.length
+      ? rows.map(r => `
+          <tr>
+            <td>${renderVerifyLineCell(r.left, { side: "left" })}</td>
+            <td>${renderVerifyLineCell(r.right, { side: "right" })}</td>
+          </tr>
+        `).join("")
+      : `<tr>
+          <td><div class="verify-meta verify-empty">해당 항목 없음</div></td>
+          <td><div class="verify-meta verify-empty">해당 항목 없음</div></td>
+        </tr>`;
+    sections.push(`
+      <div class="verify-subfield-wrap">
+        <div class="verify-subhead">
+          <span class="subfield-tag">${escapeHtml(k)}</span>
+          <span class="verify-subcount">4주기 ${leftCount}개 · 3주기 ${rightCount}개</span>
+        </div>
+        <table class="verify-pair-table">
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+    `);
+  }
+  return sections.join("");
+}
+
+function renderVerifySubfieldGroups(entries, keys, opts) {
+  const showSource = !!(opts && opts.showSource);
+  const showEmpty = !!(opts && opts.showEmpty);
+  const side = (opts && opts.side) || (showSource ? "right" : "left");
+  const alignedRowsBySubfield = (opts && opts.alignedRowsBySubfield) || null;
+  const groups = new Map();
+  for (const e of entries) {
+    const k = verifySubfieldLabel(e.item);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  }
+
+  const rendered = [];
+  for (const k of keys) {
+    let arr = groups.get(k) || [];
+    let rows = null;
+    if (alignedRowsBySubfield) {
+      rows = alignedRowsBySubfield.get(k) || [];
+      arr = side === "left"
+        ? rows.map(r => r.left).filter(Boolean)
+        : rows.map(r => r.right).filter(Boolean);
+    } else {
+      arr.sort((a, b) => {
+        if (showSource) {
+          const ao = (a.matchRightOrder != null) ? a.matchRightOrder : 9999;
+          const bo = (b.matchRightOrder != null) ? b.matchRightOrder : 9999;
+          if (ao !== bo) return ao - bo;
+          const ak = String(a.matchRightKey || "");
+          const bk = String(b.matchRightKey || "");
+          const kcmp = compareItemKey(ak, bk);
+          if (kcmp !== 0) return kcmp;
+          const ca = String(a.sourceCriterion || "");
+          const cb = String(b.sourceCriterion || "");
+          const ccmp = compareCriterion(ca || "0", cb || "0");
+          if (ccmp !== 0) return ccmp;
+        }
+        const ia = String(a.item?.attrs?.item_key || "");
+        const ib = String(b.item?.attrs?.item_key || "");
+        return compareItemKey(ia, ib);
+      });
+    }
+
+    if (!arr.length && !showEmpty) continue;
+
+    let listHtml = `<div class="verify-meta verify-empty">해당 항목 없음</div>`;
+    if (rows) {
+      listHtml = rows.length
+        ? `<ul class="verify-list">${rows.map(row => {
+            const e = side === "left" ? row.left : row.right;
+            if (!e) return `<li class="verify-blank">&nbsp;</li>`;
+            return `<li>
+              <span class="ikey">${escapeHtml(e.item.attrs.item_key || "-")}</span>
+              ${showSource ? `<span class="verify-src-tag">3주기 ${escapeHtml(e.sourceCriterion || "-")}</span>` : ""}
+              ${showSource ? `<span class="verify-match-tag">↔ ${escapeHtml(e.matchRightKey || "미매칭")}</span>` : ""}
+              ${escapeHtml(e.item.attrs.text || "")}
+            </li>`;
+          }).join("")}
+          </ul>`
+        : `<div class="verify-meta verify-empty">해당 항목 없음</div>`;
+    } else if (arr.length) {
+      listHtml = `<ul class="verify-list">${arr.map(e => `
+          <li>
+            <span class="ikey">${escapeHtml(e.item.attrs.item_key || "-")}</span>
+            ${showSource ? `<span class="verify-src-tag">3주기 ${escapeHtml(e.sourceCriterion || "-")}</span>` : ""}
+            ${showSource ? `<span class="verify-match-tag">↔ ${escapeHtml(e.matchRightKey || "미매칭")}</span>` : ""}
+            ${escapeHtml(e.item.attrs.text || "")}
+          </li>`).join("")}
+        </ul>`;
+    }
+
+    rendered.push(`
+      <div class="verify-subfield">
+        <div class="verify-subhead">
+          <span class="subfield-tag">${escapeHtml(k)}</span>
+          <span class="verify-subcount">${arr.length}개</span>
+        </div>
+        ${listHtml}
+      </div>
+    `);
+  }
+  if (!rendered.length) return `<div class="verify-meta verify-empty">항목 없음</div>`;
+  return rendered.join("");
+}
+
+function buildVerifyEntriesForCriterion(partKey, criterion) {
+  const crit4 = (state.critIds["4"][partKey] || [])
+    .map(id => state.nodesById.get(id))
+    .find(n => n && String(n.attrs.criterion) === String(criterion));
+  if (!crit4) return null;
+
+  const group = buildCompareGroup(crit4);
+  const { entries3, entries4 } = buildVerifyEntriesForGroup(group);
+
+  const verifyAlign = buildVerifyAlignmentMap(entries3, entries4);
+  for (const e of entries3) {
+    const m = verifyAlign.get(e.item.id);
+    e.matchRightId = m ? m.rightId : null;
+    e.matchRightKey = m ? m.rightKey : "";
+    e.matchRightOrder = m ? m.rightOrder : 9999;
+    e.matchSource = m ? m.source : "none";
+    e.matchScore = m ? m.score : 0;
+    e.matchAssignment = m ? m.assignment || "" : "";
+  }
+  return { crit4, group, entries3, entries4, debugRows: state.verifyDebugLast || [] };
+}
+
+function debugVerifyMapping(partKey, criterion) {
+  const pack = buildVerifyEntriesForCriterion(partKey || state.ui.part, criterion);
+  if (!pack) {
+    console.warn("검증 매핑표 대상 준거를 찾지 못했습니다.", partKey, criterion);
+    return null;
+  }
+  const summary = pack.entries3.map(e => ({
+    sourceCriterion: e.sourceCriterion,
+    leftKey: e.item.attrs.item_key || "",
+    leftText: e.item.attrs.text || "",
+    matchRightKey: e.matchRightKey || "미매칭",
+    score: e.matchScore ? Number(e.matchScore).toFixed(3) : "",
+    source: verifySourceLabel(e.matchSource, e.matchScore),
+    assignment: e.matchAssignment || "",
+  }));
+  console.table(summary);
+  for (const row of pack.debugRows) {
+    console.group(`3주기 ${row.sourceCriterion} ${row.leftKey} -> ${row.pickedKey || "미매칭"} (${row.pickedScore || "-"})`);
+    console.table(row.candidates);
+    console.groupEnd();
+  }
+  return { summary, candidates: pack.debugRows, criterion: pack.crit4, group: pack.group };
+}
+
+const VERIFY_REGRESSION_CASES = [
+  { part: "overview", criterion4: "1.1", sourceCriterion: "1.1", leftKey: "content", rightKey: "content", note: "교육목표·인재상 content 통합" },
+  { part: "overview", criterion4: "1.1", sourceCriterion: "1.2", leftKey: "content", rightKey: "content", note: "발전계획 content 통합" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.3", leftKey: "item_1", rightKey: "item_1", note: "거버넌스 운영 현황" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.3", leftKey: "item_2", rightKey: "item_2", note: "참여·소통 추진 실적" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.3", leftKey: "item_3", rightKey: "item_2", note: "참여·소통 개선 실적 N:1" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.6", leftKey: "item_1", rightKey: "item_3", note: "감사제도 운영 현황" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.6", leftKey: "item_2", rightKey: "item_4", note: "감사 결과 반영" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.6", leftKey: "item_3", rightKey: "item_5", note: "감사 결과 공개" },
+  { part: "report", criterion4: "1.2", sourceCriterion: "1.6", leftKey: "item_4", rightKey: "item_6", note: "공익제보 확장" },
+];
+
+function runVerifyRegressionChecks() {
+  const results = [];
+  for (const tc of VERIFY_REGRESSION_CASES) {
+    const pack = buildVerifyEntriesForCriterion(tc.part, tc.criterion4);
+    const hit = pack && pack.entries3.find(e =>
+      String(e.sourceCriterion) === String(tc.sourceCriterion) &&
+      String(e.item.attrs.item_key || "") === String(tc.leftKey)
+    );
+    const actual = hit ? hit.matchRightKey || "" : "";
+    results.push({
+      ok: actual === tc.rightKey,
+      part: tc.part,
+      criterion4: tc.criterion4,
+      sourceCriterion: tc.sourceCriterion,
+      leftKey: tc.leftKey,
+      expected: tc.rightKey,
+      actual: actual || "미매칭",
+      note: tc.note,
+    });
+  }
+  console.table(results);
+  const failed = results.filter(r => !r.ok);
+  if (failed.length) {
+    console.warn(`검증 매핑 회귀 실패 ${failed.length}/${results.length}`, failed);
+  } else {
+    console.info(`검증 매핑 회귀 통과 ${results.length}/${results.length}`);
+  }
+  return results;
+}
+
+if (typeof window !== "undefined") {
+  window.debugVerifyMapping = debugVerifyMapping;
+  window.runVerifyRegressionChecks = runVerifyRegressionChecks;
+}
+
+function renderVerifyBody() {
+  const wrap = document.getElementById("verify-body");
+  const statEl = document.getElementById("verify-stat");
+  if (!wrap || !statEl) return;
+
+  const pk = state.ui.part;
+  const ids4 = state.critIds["4"][pk] || [];
+  const search = state.ui.search.trim().toLowerCase();
+  let visible = 0;
+  let mapped = 0;
+  let added = 0;
+  let merged = 0;
+  let suppressed = 0;
+  const ownerMap = buildVerifyOwnerMap(pk);
+
+  const rows = [];
+  for (const cid of ids4) {
+    const crit4 = state.nodesById.get(cid);
+    if (!crit4) continue;
+    const group = buildCompareGroup(crit4);
+    const srcJoined = group.sources3.map(s => `${s.attrs.criterion} ${s.attrs.title || ""}`).join(" ");
+    const searchBag = `${crit4.attrs.criterion} ${crit4.attrs.title || ""} ${srcJoined}`.toLowerCase();
+    if (search && !searchBag.includes(search)) continue;
+
+    visible++;
+    if (!group.sources3.length) added++;
+    else mapped++;
+    if (group.sources3.length > 1) merged++;
+
+    const { entries3, entries4, items4 } = buildVerifyEntriesForGroup(group);
+
+    const verifyAlign = buildVerifyAlignmentMap(entries3, entries4);
+    for (const e of entries3) {
+      const m = verifyAlign.get(e.item.id);
+      e.matchRightId = m ? m.rightId : null;
+      e.matchRightKey = m ? m.rightKey : "";
+      e.matchRightOrder = m ? m.rightOrder : 9999;
+      e.matchSource = m ? m.source : "none";
+      e.matchScore = m ? m.score : 0;
+    }
+    const visibleEntries3 = [];
+    for (const e of entries3) {
+      const o = ownerMap.get(e.item.id);
+      if (shouldSuppressVerifyDuplicate(e, crit4, ownerMap)) {
+        suppressed++;
+        e.suppressedBy = o;
+        continue;
+      }
+      visibleEntries3.push(e);
+    }
+    const subfields = sortVerifySubfields([
+      ...entries4.map(e => verifySubfieldLabel(e.item)),
+      ...visibleEntries3.map(e => verifySubfieldLabel(e.item)),
+    ]);
+    const alignedRowsBySubfield = buildVerifyAlignedRows(entries4, visibleEntries3, subfields);
+
+    const leftHeadHtml = `
+      <div class="verify-title">
+        <span class="cmp-no">${escapeHtml(crit4.attrs.criterion)}</span>
+        ${escapeHtml(crit4.attrs.title || "")}
+        ${mappingBadgeHtml(group.mapping_type)}
+      </div>
+      <div class="verify-meta">${escapeHtml(PART_LABELS[crit4.attrs.part_key] || crit4.attrs.part_key)} · 항목 ${items4.length}개</div>
+    `;
+
+    let rightHeadHtml = "";
+    if (!group.sources3.length) {
+      rightHeadHtml = `<div class="verify-empty">(매칭된 3주기 준거 없음 · 신설)</div>`;
+    } else {
+      const sourceInfo = group.sources3
+        .map(src => `3주기 ${escapeHtml(src.attrs.criterion)} ${escapeHtml(src.attrs.title || "")}`)
+        .join(" · ");
+      rightHeadHtml = `
+        <div class="verify-title">매칭된 3주기 준거 ${group.sources3.length}개</div>
+        <div class="verify-meta">${sourceInfo}</div>
+      `;
+    }
+
+    const lineCompareHtml = renderVerifyAlignedSubfields(subfields, alignedRowsBySubfield);
+  const noteHtml = group.mapping_note
+    ? `<div class="verify-note" title="Claude 1차 분석 코멘트: 편람 원문 사실과 별도 검토 필요">📝 분석 코멘트: ${escapeHtml(group.mapping_note)}</div>`
+    : "";
+
+    rows.push(`
+      <div class="verify-criterion">
+        <div class="verify-crit-head">
+          <div class="verify-crit-col">${leftHeadHtml}</div>
+          <div class="verify-crit-col">${rightHeadHtml}</div>
+        </div>
+        ${lineCompareHtml}
+        ${noteHtml}
+      </div>
+    `);
+  }
+
+  statEl.textContent = `표시 ${visible} · 매핑 ${mapped} · 신설 ${added} · 통합(N:1) ${merged} · 타 준거 우선 ${suppressed}`;
+
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="cmp-empty">검색 조건에 맞는 준거가 없습니다.</div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="verify-criteria">${rows.join("")}</div>`;
+}
+
 /* =====================================================================
  * 이벤트 핸들러 & 라우팅
  * =====================================================================*/
@@ -1508,9 +2784,11 @@ function switchTab(tab) {
   const explore = document.getElementById("tab-explore");
   const impact  = document.getElementById("tab-impact");
   const compare = document.getElementById("tab-compare");
+  const verify  = document.getElementById("tab-verify");
   explore.classList.toggle("hidden", tab !== "explore");
   impact.classList.toggle("hidden", tab !== "impact");
   compare.classList.toggle("hidden", tab !== "compare");
+  verify.classList.toggle("hidden", tab !== "verify");
   compare.style.display = (tab === "compare") ? "flex" : "none";
 
   if (tab === "explore") {
@@ -1520,6 +2798,8 @@ function switchTab(tab) {
     // Tab 3 진입 시 네비·본문 렌더
     renderCompareNav();
     renderCompareBody();
+  } else if (tab === "verify") {
+    renderVerifyBody();
   }
 }
 
@@ -1580,6 +2860,7 @@ function bindEvents() {
       renderLists();
       renderCenterSvg();
       renderCompareNav();
+      renderVerifyBody();
     }, 180);
   });
   // 초기화
@@ -1601,6 +2882,7 @@ function bindEvents() {
     if (ev.key === "1") switchTab("explore");
     else if (ev.key === "2") switchTab("impact");
     else if (ev.key === "3") switchTab("compare");
+    else if (ev.key === "4") switchTab("verify");
     else if (ev.key === "Escape") {
       state.ui.selected = null;
       state.ui.compareSelected = null;
@@ -1617,6 +2899,7 @@ function renderAll() {
   // Tab 3 네비는 항상 갱신 (편람 변경·검색 변경 시 반영). 본문은 선택된 준거가 있을 때만.
   renderCompareNav();
   if (state.ui.activeTab === "compare") renderCompareBody();
+  renderVerifyBody();
 }
 
 function escapeHtml(s) {
